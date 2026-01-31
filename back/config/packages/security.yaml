@@ -41,6 +41,8 @@ security:
   access_control:
     # Routes publiques (pas d'authentification requise)
     - { path: ^/api/login, roles: PUBLIC_ACCESS }
+    - { path: ^/api/dashboard, roles: ROLE_ADMIN }  # Seul un admin peut acceder au dashboard
+    - { path: ^/api/profile, roles: ["ROLE_ADMIN","ROLE_USER","PUBLIC_ACCESS"] }  # Un admin ou un utilisateur peut acceder au profil
     - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
     - { path: ^/register, roles: PUBLIC_ACCESS }
     - { path: ^/$, roles: PUBLIC_ACCESS }  # Page d'accueil
@@ -48,3 +50,4 @@ security:
 
     # Toutes les autres routes nécessitent une authentification
     - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/api/docs, roles: IS_AUTHENTICATED_FULLY }

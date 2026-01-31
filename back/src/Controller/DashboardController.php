@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,6 +12,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class DashboardController extends AbstractController
 {
+    public function __construct(
+        private readonly UserRepository $userRepository,
+        private readonly EntityManagerInterface $entityManager
+    ) {
+    }
     /**
      * Page dashboard protégée par JWT
      * Nécessite un token JWT valide dans le header Authorization
@@ -42,17 +49,30 @@ class DashboardController extends AbstractController
      * API endpoint pour récupérer les données du dashboard
      */
     #[Route('/api/dashboard', name: 'api_dashboard', methods: ['GET'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    #[IsGranted('ROLE_ADMIN')]
     public function apiDashboard(): JsonResponse
     {
         $user = $this->getUser();
 
+        $totalUsers = $this->userRepository->count([]);
+
+        $now = new \DateTime();
+
+        $activeSessions = (int) $this->entityManager
+            ->createQuery('SELECT COUNT(r) FROM App\Entity\RefreshToken r WHERE r.valid > :now')
+            ->setParameter('now', $now)
+            ->getSingleScalarResult();
+
         return new JsonResponse([
-            'message' => 'Bienvenue sur le dashboard',
-            'user' => $user->getUserIdentifier(),
+            'message' => 'Bienvenue sur le dashboard administrateur',
+            'user' => [
+                'email' => $user->getUserIdentifier(),
+                'roles' => $user->getRoles(),
+                'nomComplet' => $user->getNomComplet()
+            ],
             'stats' => [
-                'connected' => true,
-                'last_login' => date('Y-m-d H:i:s')
+                'totalUsers' => $totalUsers,
+                'todayLogins' => $activeSessions
             ]
         ]);
     }

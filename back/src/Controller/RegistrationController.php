@@ -38,6 +38,11 @@ class RegistrationController extends AbstractController
             $passwordHasher->hashPassword($user, $data['password'])
         );
 
+        // Sauvegarder le nom complet s'il est fourni
+        if (isset($data['nomComplet']) && !empty($data['nomComplet'])) {
+            $user->setNomComplet($data['nomComplet']);
+        }
+
         $em->persist($user);
         $em->flush();
 
@@ -45,7 +50,8 @@ class RegistrationController extends AbstractController
             'message' => 'Utilisateur créé avec succès',
             'user' => [
                 'email' => $user->getEmail(),
-                'roles' => $user->getRoles()
+                'roles' => $user->getRoles(),
+                'nomComplet' => $user->getNomComplet()
             ]
         ], Response::HTTP_CREATED);
     }

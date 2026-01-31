@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,6 +12,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class DashboardController extends AbstractController
 {
+    public function __construct(
+        private EntityManagerInterface $entityManager
+    ) {
+    }
     /**
      * Page dashboard protégée par JWT
      * Nécessite un token JWT valide dans le header Authorization
@@ -27,7 +33,7 @@ class DashboardController extends AbstractController
                 'user' => $user->getUserIdentifier(),
                 'stats' => [
                     'connected' => true,
-                    'last_login' => date('Y-m-d H:i:s')
+                    'last_login' => date('d-m-Y H:i:s')
                 ]
             ]);
         }
@@ -47,12 +53,25 @@ class DashboardController extends AbstractController
     {
         $user = $this->getUser();
 
+        // Compter le nombre total d'utilisateurs
+        $totalUsers = $this->entityManager->getRepository(User::class)->count([]);
+
+        $now = new \DateTime();
+        $activeSessions = (int) $this->entityManager
+            ->createQuery('SELECT COUNT(r) FROM App\Entity\RefreshToken r WHERE r.valid > :now')
+            ->setParameter('now', $now)
+            ->getSingleScalarResult();
+
         return new JsonResponse([
             'message' => 'Bienvenue sur le dashboard',
-            'user' => $user->getUserIdentifier(),
+            'user' => [
+                'email' => $user->getUserIdentifier(),
+                'roles' => $user->getRoles(),
+                'nomComplet' => $user->getNomComplet()
+            ],
             'stats' => [
-                'connected' => true,
-                'last_login' => date('Y-m-d H:i:s')
+                'totalUsers' => $totalUsers,
+                'todayLogins' => $activeSessions // Session actuelle
             ]
         ]);
     }

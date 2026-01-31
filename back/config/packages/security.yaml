@@ -3,6 +3,13 @@ security:
     Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     App\Entity\User: 'auto'
 
+  # Hiérarchie des rôles
+  role_hierarchy:
+    ROLE_SEMI_ADMIN: ROLE_USER
+    ROLE_MODERATOR: ROLE_USER
+    ROLE_ANALYST: ROLE_USER
+    ROLE_ADMIN: [ROLE_SEMI_ADMIN, ROLE_MODERATOR, ROLE_ANALYST]
+
   providers:
     app_user_provider:
       entity:
@@ -42,9 +49,16 @@ security:
     # Routes publiques (pas d'authentification requise)
     - { path: ^/api/login, roles: PUBLIC_ACCESS }
     - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
+    - { path: ^/api/password, roles: PUBLIC_ACCESS }  # Reset password
     - { path: ^/register, roles: PUBLIC_ACCESS }
     - { path: ^/$, roles: PUBLIC_ACCESS }  # Page d'accueil
     - { path: ^/jwt-example.html, roles: PUBLIC_ACCESS }  # Page de test
+
+    # Routes admin - ROLE_ADMIN requis
+    - { path: ^/api/admin, roles: ROLE_ADMIN }
+
+    # Dashboard accessible aux semi-admin et admin
+    - { path: ^/api/dashboard, roles: [ROLE_SEMI_ADMIN, ROLE_ADMIN] }
 
     # Toutes les autres routes nécessitent une authentification
     - { path: ^/, roles: IS_AUTHENTICATED_FULLY }

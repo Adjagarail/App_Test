@@ -1,0 +1,17 @@
+# Docker volumes
+docker/db_data/
+docker/postgres_sonar_data/
+docker/jenkins_data/
+docker/sonarqube_data/
+docker/sonarqube_extensions/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

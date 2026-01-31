@@ -10,8 +10,8 @@ Votre application utilise JWT (JSON Web Tokens) pour **toutes** les authentifica
 
 ### Firewalls configurés
 
-1. **login** : Route `/login` - Authentification et génération du JWT
-2. **refresh** : Route `/token/refresh` - Rafraîchissement du token
+1. **login** : Route `/api/login_check` - Authentification et génération du JWT
+2. **refresh** : Route `/api/token/refresh` - Rafraîchissement du token
 3. **api** : Routes `/api/*` - API protégée par JWT
 4. **main** : Toutes les autres routes - Pages web protégées par JWT
 
@@ -22,7 +22,7 @@ Votre application utilise JWT (JSON Web Tokens) pour **toutes** les authentifica
 │   Client    │
 └──────┬──────┘
        │
-       │ 1. POST /login
+       │ 1. POST /api/login_check
        │    { email, password }
        ▼
 ┌─────────────┐
@@ -51,7 +51,7 @@ Votre application utilise JWT (JSON Web Tokens) pour **toutes** les authentifica
 
 ### Endpoint
 ```
-POST /login
+POST /api/login_check
 Content-Type: application/json
 ```
 
@@ -73,14 +73,14 @@ Content-Type: application/json
 
 ### Exemple avec cURL
 ```bash
-curl -X POST http://localhost:8080/login \
+curl -X POST http://localhost:8080/api/login_check \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password"}'
 ```
 
 ### Exemple JavaScript
 ```javascript
-const response = await fetch('/login', {
+const response = await fetch('/api/login_check', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ Les JWT expirent après 15 minutes (900 secondes par défaut). Utilisez le refre
 
 ### Endpoint
 ```
-POST /token/refresh
+POST /api/token/refresh
 Content-Type: application/json
 ```
 
@@ -143,8 +143,17 @@ Content-Type: application/json
 ```json
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
-  "refresh_token": "xyz789ghi012..."
+  "refresh_token": "abc123def456..."
 }
+```
+
+**Note** : Le `refresh_token` retourné peut être le même que celui envoyé (il reste valide pendant 30 jours).
+
+### Exemple avec cURL
+```bash
+curl -X POST http://localhost:8080/api/token/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"VOTRE_REFRESH_TOKEN_ICI"}'
 ```
 
 ### Exemple JavaScript
@@ -152,7 +161,7 @@ Content-Type: application/json
 async function refreshAccessToken() {
   const refreshToken = localStorage.getItem('refresh_token');
 
-  const response = await fetch('/token/refresh', {
+  const response = await fetch('/api/token/refresh', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -161,6 +170,10 @@ async function refreshAccessToken() {
       refresh_token: refreshToken
     })
   });
+
+  if (!response.ok) {
+    throw new Error('Échec du rafraîchissement du token');
+  }
 
   const data = await response.json();
 
@@ -177,8 +190,8 @@ async function refreshAccessToken() {
 ## 4. Routes disponibles
 
 ### Routes publiques
-- `POST /login` - Connexion
-- `POST /token/refresh` - Rafraîchir le token
+- `POST /api/login_check` - Connexion
+- `POST /api/token/refresh` - Rafraîchir le token
 - `POST /register` - Inscription (si implémentée)
 
 ### Routes protégées (nécessitent un JWT valide)

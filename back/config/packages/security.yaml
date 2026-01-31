@@ -14,51 +14,37 @@ security:
       pattern: ^/(_profiler|_wdt|assets|build)/
       security: false
 
-    # Firewall pour la connexion (retourne un JWT)
+    # Firewall pour la connexion - POST /api/login_check retourne un JWT
     login:
-      pattern: ^/login$
+      pattern: ^/api/login
       stateless: true
       provider: app_user_provider
       json_login:
-        check_path: /login
+        check_path: /api/login_check
         username_path: email
         password_path: password
         success_handler: lexik_jwt_authentication.handler.authentication_success
         failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-    # Firewall pour le refresh token
+    # Firewall pour refresh token - POST /api/token/refresh
     refresh:
-      pattern: ^/token/refresh$
+      pattern: ^/api/token/refresh
       stateless: true
 
-    # Firewall API (si vous avez des routes /api)
-    api:
-      pattern: ^/api
-      stateless: true
-      provider: app_user_provider
-      entry_point: jwt
-      jwt: ~
-      refresh_jwt:
-        check_path: /token/refresh
-
-    # Firewall principal pour toutes les autres routes (profile, dashboard, etc.)
+    # Firewall principal - toutes les autres routes protégées par JWT
     main:
       stateless: true
       provider: app_user_provider
-      entry_point: jwt
       jwt: ~
-      refresh_jwt:
-        check_path: /token/refresh
 
+  # Contrôle d'accès
   access_control:
-    # Routes publiques
-    - { path: ^/login$, roles: PUBLIC_ACCESS }
-    - { path: ^/token/refresh$, roles: PUBLIC_ACCESS }
+    # Routes publiques (pas d'authentification requise)
+    - { path: ^/api/login, roles: PUBLIC_ACCESS }
+    - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
     - { path: ^/register, roles: PUBLIC_ACCESS }
+    - { path: ^/$, roles: PUBLIC_ACCESS }  # Page d'accueil
+    - { path: ^/jwt-example.html, roles: PUBLIC_ACCESS }  # Page de test
 
-    # Routes API protégées
-    - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
-
-    # Routes web protégées (vos futures pages)
-    - { path: ^/profile, roles: IS_AUTHENTICATED_FULLY }
-    - { path: ^/dashboard, roles: IS_AUTHENTICATED_FULLY }
+    # Toutes les autres routes nécessitent une authentification
+    - { path: ^/, roles: IS_AUTHENTICATED_FULLY }

@@ -203,7 +203,7 @@
             const password = document.getElementById('password').value;
 
             try {
-                const response = await fetch(`${API_BASE}/login`, {
+                const response = await fetch(`${API_BASE}/api/login_check`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -302,7 +302,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/token/refresh`, {
+                const response = await fetch(`${API_BASE}/api/token/refresh`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

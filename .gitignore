@@ -4,6 +4,7 @@ docker/postgres_sonar_data/
 docker/jenkins_data/
 docker/sonarqube_data/
 docker/sonarqube_extensions/
+.claude/
 
 # IDE
 .idea/

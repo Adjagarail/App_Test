@@ -12,4 +12,5 @@ export interface JwtPayload {
   exp: number;
   roles: string[];
   username: string;
+  nomComplet: string;
 }

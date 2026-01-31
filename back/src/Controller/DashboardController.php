@@ -67,7 +67,8 @@ class DashboardController extends AbstractController
             'message' => 'Bienvenue sur le dashboard administrateur',
             'user' => [
                 'email' => $user->getUserIdentifier(),
-                'roles' => $user->getRoles()
+                'roles' => $user->getRoles(),
+                'nomComplet' => $user->getNomComplet()
             ],
             'stats' => [
                 'totalUsers' => $totalUsers,

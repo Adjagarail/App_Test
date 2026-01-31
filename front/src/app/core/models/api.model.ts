@@ -7,6 +7,7 @@ export interface ApiResponse<T = unknown> {
 export interface ProfileResponse {
   email: string;
   roles: string[];
+  nomComplet: string;
 }
 
 export interface DashboardResponse {
@@ -14,6 +15,7 @@ export interface DashboardResponse {
   user: {
     email: string;
     roles: string[];
+    nomComplet: string;
   };
   stats: {
     totalUsers: number;

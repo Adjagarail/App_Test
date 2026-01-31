@@ -49,6 +49,7 @@ class ProfileController extends AbstractController
         return new JsonResponse([
             'email' => $user->getUserIdentifier(),
             'roles' => $user->getRoles(),
+            'nomComplet' => $user->getNomComplet(),
         ]);
     }
 }

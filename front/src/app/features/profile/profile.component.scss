@@ -1,0 +1,225 @@
+.profile-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-header {
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 2rem;
+    color: #1f2937;
+    margin: 0;
+  }
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  text-align: center;
+
+  p {
+    color: #6b7280;
+    margin-top: 1rem;
+  }
+}
+
+.error-state {
+  p {
+    color: #dc2626;
+    margin-bottom: 1rem;
+  }
+}
+
+.spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &-secondary {
+    background-color: #e5e7eb;
+    color: #374151;
+
+    &:hover {
+      background-color: #d1d5db;
+    }
+  }
+
+  &-outline {
+    background-color: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+
+    &:hover {
+      background-color: #667eea;
+      color: white;
+    }
+  }
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profile-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  span {
+    color: white;
+    font-size: 2rem;
+    font-weight: 600;
+  }
+}
+
+.profile-info {
+  h2 {
+    margin: 0 0 0.75rem 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+  }
+}
+
+.roles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.role-badge {
+  background-color: #e5e7eb;
+  color: #374151;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  &.admin {
+    background-color: #fef3c7;
+    color: #d97706;
+  }
+}
+
+.token-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1.1rem;
+  }
+}
+
+.token-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .label {
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .value {
+    color: #1f2937;
+    font-weight: 500;
+  }
+}
+
+.admin-notice {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+
+  svg {
+    color: #d97706;
+    flex-shrink: 0;
+  }
+
+  strong {
+    color: #92400e;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    color: #b45309;
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .token-info {
+    flex-direction: column;
+    align-items: stretch;
+
+    .btn {
+      justify-content: center;
+    }
+  }
+}

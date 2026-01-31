@@ -14,44 +14,51 @@ security:
       pattern: ^/(_profiler|_wdt|assets|build)/
       security: false
 
-    api:
-      pattern: ^/api
+    # Firewall pour la connexion (retourne un JWT)
+    login:
+      pattern: ^/login$
       stateless: true
       provider: app_user_provider
-      entry_point: jwt
-
       json_login:
-        check_path: /api/login_check
+        check_path: /login
         username_path: email
         password_path: password
         success_handler: lexik_jwt_authentication.handler.authentication_success
         failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-      jwt: ~
+    # Firewall pour le refresh token
+    refresh:
+      pattern: ^/token/refresh$
+      stateless: true
 
-      refresh_jwt:
-        check_path: /api/token/refresh
-      custom_authenticator: App\Security\LoginAuthenticator
-      logout:
-        path: app_logout
-        # where to redirect after logout
-        # target: app_any_route
-
-      remember_me:
-        secret: '%kernel.secret%'
-        lifetime: 604800
-        path: /
-        # by default, the feature is enabled by checking a checkbox in the
-        # login form, uncomment the following line to always enable it.
-        #always_remember_me: true
-
-    main:
-      lazy: true
+    # Firewall API (si vous avez des routes /api)
+    api:
+      pattern: ^/api
+      stateless: true
       provider: app_user_provider
-      # (optionnel) si tu as un site web hors /api, tu peux forcer :
-      # pattern: ^/(?!api)
+      entry_point: jwt
+      jwt: ~
+      refresh_jwt:
+        check_path: /token/refresh
+
+    # Firewall principal pour toutes les autres routes (profile, dashboard, etc.)
+    main:
+      stateless: true
+      provider: app_user_provider
+      entry_point: jwt
+      jwt: ~
+      refresh_jwt:
+        check_path: /token/refresh
 
   access_control:
-    - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
-    - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
+    # Routes publiques
+    - { path: ^/login$, roles: PUBLIC_ACCESS }
+    - { path: ^/token/refresh$, roles: PUBLIC_ACCESS }
+    - { path: ^/register, roles: PUBLIC_ACCESS }
+
+    # Routes API protégées
     - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+
+    # Routes web protégées (vos futures pages)
+    - { path: ^/profile, roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/dashboard, roles: IS_AUTHENTICATED_FULLY }

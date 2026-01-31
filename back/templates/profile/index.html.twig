@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Profil{% endblock %}
+
+{% block body %}
+<div style="max-width: 800px; margin: 50px auto; padding: 20px;">
+    <h1>🙋 Mon Profil</h1>
+
+    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-top: 20px;">
+        <h2>Informations utilisateur</h2>
+        <p><strong>Email :</strong> {{ user.userIdentifier }}</p>
+        <p><strong>Rôles :</strong> {{ user.roles|join(', ') }}</p>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <a href="{{ path('app_dashboard') }}" style="display: inline-block; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px;">
+            Aller au Dashboard
+        </a>
+        <a href="{{ path('app_logout') }}" style="display: inline-block; padding: 10px 20px; background: #f44336; color: white; text-decoration: none; border-radius: 5px; margin-left: 10px;">
+            Déconnexion
+        </a>
+    </div>
+
+    <div style="margin-top: 30px; padding: 15px; background: #fff9c4; border-left: 4px solid #ffd600; border-radius: 5px;">
+        <strong>💡 Info JWT :</strong><br>
+        Cette page est protégée par JWT. Vous devez avoir un token valide pour y accéder.
+        <br><br>
+        <strong>Pour tester en JSON :</strong><br>
+        <code>GET /api/profile</code> avec header <code>Authorization: Bearer YOUR_TOKEN</code>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemple JWT - Authentification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        .response pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .success {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .token-info {
+            background: #fff9c4;
+            border-left: 4px solid #ffd600;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        .token-info strong {
+            color: #f57f17;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Exemple JWT</h1>
+        <p class="subtitle">Testez l'authentification JWT avec refresh token</p>
+
+        <!-- Section Login -->
+        <div class="section">
+            <h2>1. Connexion</h2>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="votre@email.com" value="test@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" placeholder="Votre mot de passe" value="password">
+            </div>
+            <button onclick="login()">Se connecter</button>
+            <div id="loginResponse"></div>
+        </div>
+
+        <!-- Section Actions -->
+        <div class="section">
+            <h2>2. Tester les routes protégées</h2>
+            <button onclick="getProfile()" id="btnProfile" disabled>Voir mon profil</button>
+            <button onclick="getDashboard()" id="btnDashboard" disabled>Voir le dashboard</button>
+            <button onclick="refreshToken()" id="btnRefresh" disabled>Rafraîchir le token</button>
+            <button onclick="logout()" id="btnLogout" disabled>Se déconnecter</button>
+            <div id="actionResponse"></div>
+        </div>
+
+        <!-- Token Info -->
+        <div id="tokenInfo"></div>
+    </div>
+
+    <script>
+        const API_BASE = '';  // Même domaine
+
+        // Stockage des tokens
+        let accessToken = localStorage.getItem('jwt_token');
+        let refreshTokenValue = localStorage.getItem('refresh_token');
+
+        // Initialisation
+        updateUI();
+
+        function updateUI() {
+            const hasToken = !!accessToken;
+            document.getElementById('btnProfile').disabled = !hasToken;
+            document.getElementById('btnDashboard').disabled = !hasToken;
+            document.getElementById('btnRefresh').disabled = !refreshTokenValue;
+            document.getElementById('btnLogout').disabled = !hasToken;
+
+            if (hasToken) {
+                showTokenInfo();
+            } else {
+                document.getElementById('tokenInfo').innerHTML = '';
+            }
+        }
+
+        function showTokenInfo() {
+            const payload = parseJWT(accessToken);
+            const exp = new Date(payload.exp * 1000);
+            const now = new Date();
+            const timeLeft = Math.max(0, Math.floor((exp - now) / 1000 / 60));
+
+            document.getElementById('tokenInfo').innerHTML = `
+                <div class="token-info">
+                    <strong>✓ Token actif</strong><br>
+                    Utilisateur: ${payload.username || payload.email || 'N/A'}<br>
+                    Expire dans: ${timeLeft} minutes<br>
+                    ${refreshTokenValue ? '🔄 Refresh token disponible' : ''}
+                </div>
+            `;
+        }
+
+        function parseJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(atob(base64));
+            } catch (e) {
+                return {};
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    accessToken = data.token;
+                    refreshTokenValue = data.refresh_token;
+                    localStorage.setItem('jwt_token', accessToken);
+                    localStorage.setItem('refresh_token', refreshTokenValue);
+
+                    document.getElementById('loginResponse').innerHTML = `
+                        <div class="response success">
+                            <strong>✓ Connexion réussie!</strong><br>
+                            Token reçu et stocké dans localStorage.
+                        </div>
+                    `;
+                    updateUI();
+                } else {
+                    document.getElementById('loginResponse').innerHTML = `
+                        <div class="response error">
+                            <strong>✗ Erreur:</strong> ${data.message || 'Email ou mot de passe incorrect'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('loginResponse').innerHTML = `
+                    <div class="response error">
+                        <strong>✗ Erreur réseau:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function getProfile() {
+            await makeAuthenticatedRequest('/api/profile', 'actionResponse');
+        }
+
+        async function getDashboard() {
+            await makeAuthenticatedRequest('/api/dashboard', 'actionResponse');
+        }
+
+        async function makeAuthenticatedRequest(url, responseElementId) {
+            if (!accessToken) {
+                document.getElementById(responseElementId).innerHTML = `
+                    <div class="response error">Vous devez vous connecter d'abord</div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}${url}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById(responseElementId).innerHTML = `
+                        <div class="response success">
+                            <strong>✓ Succès:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById(responseElementId).innerHTML = `
+                        <div class="response error">
+                            <strong>✗ Erreur ${response.status}:</strong> ${data.message || 'Non autorisé'}
+                            ${response.status === 401 ? '<br>Votre token a peut-être expiré. Essayez de le rafraîchir.' : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById(responseElementId).innerHTML = `
+                    <div class="response error">
+                        <strong>✗ Erreur réseau:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function refreshToken() {
+            if (!refreshTokenValue) {
+                document.getElementById('actionResponse').innerHTML = `
+                    <div class="response error">Aucun refresh token disponible</div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/token/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ refresh_token: refreshTokenValue })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    accessToken = data.token;
+                    refreshTokenValue = data.refresh_token || refreshTokenValue;
+                    localStorage.setItem('jwt_token', accessToken);
+                    if (data.refresh_token) {
+                        localStorage.setItem('refresh_token', data.refresh_token);
+                    }
+
+                    document.getElementById('actionResponse').innerHTML = `
+                        <div class="response success">
+                            <strong>✓ Token rafraîchi!</strong><br>
+                            Nouveau token reçu et stocké.
+                        </div>
+                    `;
+                    updateUI();
+                } else {
+                    document.getElementById('actionResponse').innerHTML = `
+                        <div class="response error">
+                            <strong>✗ Erreur:</strong> Impossible de rafraîchir le token<br>
+                            ${data.message || ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('actionResponse').innerHTML = `
+                    <div class="response error">
+                        <strong>✗ Erreur réseau:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function logout() {
+            accessToken = null;
+            refreshTokenValue = null;
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('refresh_token');
+            document.getElementById('actionResponse').innerHTML = `
+                <div class="response success">
+                    <strong>✓ Déconnexion réussie</strong><br>
+                    Tokens supprimés du localStorage.
+                </div>
+            `;
+            updateUI();
+        }
+    </script>
+</body>
+</html>

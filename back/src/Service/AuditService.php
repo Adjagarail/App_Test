@@ -125,17 +125,35 @@ class AuditService
         return $this->log(AuditLog::ACTION_UNSUSPENDED, $admin, $target);
     }
 
-    public function logImpersonationStart(User $admin, User $target, string $sessionId): AuditLog
-    {
+    public function logImpersonationStart(
+        User $admin,
+        User $target,
+        string $sessionId,
+        ?string $reason = null,
+        ?\DateTimeInterface $expiresAt = null
+    ): AuditLog {
         return $this->log(AuditLog::ACTION_IMPERSONATION_START, $admin, $target, [
             'session_id' => $sessionId,
+            'reason' => $reason,
+            'expires_at' => $expiresAt?->format('c'),
+            'target_roles' => $target->getRoles(),
+            'target_email_verified' => $target->isEmailVerified(),
         ]);
     }
 
-    public function logImpersonationStop(User $admin, User $target, string $sessionId): AuditLog
-    {
+    public function logImpersonationStop(
+        User $admin,
+        User $target,
+        string $sessionId,
+        ?string $duration = null,
+        ?int $actionsCount = null,
+        ?array $pagesVisited = null
+    ): AuditLog {
         return $this->log(AuditLog::ACTION_IMPERSONATION_STOP, $admin, $target, [
             'session_id' => $sessionId,
+            'duration' => $duration,
+            'actions_count' => $actionsCount,
+            'pages_visited' => $pagesVisited,
         ]);
     }
 

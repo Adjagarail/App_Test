@@ -47,11 +47,45 @@ export class MercureService implements OnDestroy {
   isConnected = signal(false);
 
   private readonly mercureUrl = environment.mercureUrl || 'http://localhost:3000/.well-known/mercure';
-  private readonly maxReconnectAttempts = 10;
-  private readonly baseReconnectDelay = 1000;
+  private readonly maxReconnectAttempts = 15;
+  private readonly baseReconnectDelay = 500; // Start faster
+  private readonly maxReconnectDelay = 30000; // Max 30 seconds
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnDestroy(): void {
     this.closeAll();
+    this.stopHeartbeat();
+  }
+
+  /**
+   * Start heartbeat to monitor connection health
+   */
+  private startHeartbeat(): void {
+    if (this.heartbeatInterval) return;
+
+    this.heartbeatInterval = setInterval(() => {
+      // Check if any connection is dead
+      this.eventSources.forEach((es, topic) => {
+        if (es.readyState === EventSource.CLOSED) {
+          console.warn(`Heartbeat detected dead connection for topic: ${topic}`);
+          const callback = this.callbacks.get(topic);
+          if (callback) {
+            this.eventSources.delete(topic);
+            this.createEventSource(topic, 0);
+          }
+        }
+      });
+    }, 10000); // Check every 10 seconds
+  }
+
+  /**
+   * Stop heartbeat monitoring
+   */
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   /**
@@ -78,6 +112,8 @@ export class MercureService implements OnDestroy {
       eventSource.onopen = () => {
         this.isConnected.set(true);
         console.log(`Mercure connected to topic: ${topic}`);
+        // Start heartbeat monitoring
+        this.startHeartbeat();
       };
 
       eventSource.onmessage = (event) => {
@@ -85,7 +121,8 @@ export class MercureService implements OnDestroy {
           const data = JSON.parse(event.data) as MercureMessage;
           const callback = this.callbacks.get(topic);
           if (callback) {
-            callback(data);
+            // Execute callback immediately for real-time response
+            queueMicrotask(() => callback(data));
           }
         } catch {
           console.warn('Failed to parse Mercure message:', event.data);
@@ -100,10 +137,13 @@ export class MercureService implements OnDestroy {
         eventSource.close();
         this.eventSources.delete(topic);
 
-        // Reconnect with exponential backoff
+        // Reconnect with exponential backoff (capped)
         if (attempts < this.maxReconnectAttempts) {
-          const delay = this.baseReconnectDelay * Math.pow(2, attempts);
-          console.log(`Reconnecting to ${topic} in ${delay}ms (attempt ${attempts + 1})`);
+          const delay = Math.min(
+            this.baseReconnectDelay * Math.pow(1.5, attempts),
+            this.maxReconnectDelay
+          );
+          console.log(`Reconnecting to ${topic} in ${delay}ms (attempt ${attempts + 1}/${this.maxReconnectAttempts})`);
 
           const timer = setTimeout(() => {
             this.createEventSource(topic, attempts + 1);
@@ -111,7 +151,15 @@ export class MercureService implements OnDestroy {
 
           this.reconnectTimers.set(topic, timer);
         } else {
-          console.error(`Max reconnect attempts reached for topic: ${topic}`);
+          console.error(`Max reconnect attempts reached for topic: ${topic}. Will retry on next user action.`);
+          // Reset attempts counter so next manual action can trigger reconnect
+          setTimeout(() => {
+            const callback = this.callbacks.get(topic);
+            if (callback && !this.eventSources.has(topic)) {
+              console.log(`Auto-retrying connection to ${topic} after cooldown...`);
+              this.createEventSource(topic, 0);
+            }
+          }, 60000); // Retry after 1 minute cooldown
         }
       };
 
@@ -257,5 +305,62 @@ export class MercureService implements OnDestroy {
   isSubscribedTo(topic: string): boolean {
     const es = this.eventSources.get(topic);
     return es !== undefined && es.readyState === EventSource.OPEN;
+  }
+
+  /**
+   * Initialize all subscriptions for a user after login.
+   * Call this after successful authentication.
+   */
+  initializeForUser(userId: number, isAdmin: boolean): void {
+    console.log(`Initializing Mercure subscriptions for user ${userId}, isAdmin: ${isAdmin}`);
+
+    // Always subscribe to dashboard stats (for active users count)
+    this.subscribeToActiveUsers();
+
+    if (isAdmin) {
+      // Admin subscriptions
+      this.subscribeToAdminReports(() => {});
+      this.subscribeToAdminNotifications(() => {});
+    } else {
+      // Regular user subscriptions
+      this.subscribeToMyReports(userId, () => {});
+    }
+  }
+
+  /**
+   * Force reconnect all active subscriptions.
+   * Use this when user suspects connection issues.
+   */
+  reconnectAll(): void {
+    console.log('Force reconnecting all Mercure subscriptions...');
+
+    const topics = Array.from(this.callbacks.keys());
+
+    // Close all existing connections
+    this.eventSources.forEach(es => es.close());
+    this.eventSources.clear();
+
+    // Clear reconnect timers
+    this.reconnectTimers.forEach(timer => clearTimeout(timer));
+    this.reconnectTimers.clear();
+
+    // Reconnect all
+    topics.forEach(topic => {
+      const callback = this.callbacks.get(topic);
+      if (callback) {
+        this.createEventSource(topic, 0);
+      }
+    });
+  }
+
+  /**
+   * Get connection status for debugging.
+   */
+  getConnectionStatus(): { topic: string; status: string }[] {
+    return Array.from(this.eventSources.entries()).map(([topic, es]) => ({
+      topic,
+      status: es.readyState === EventSource.OPEN ? 'connected' :
+              es.readyState === EventSource.CONNECTING ? 'connecting' : 'closed'
+    }));
   }
 }

@@ -5,9 +5,9 @@ import { ApiService } from '../../core/services/api.service';
 import { AdminService } from '../../core/services/admin.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
-import { NotificationService } from '../../core/services/notification.service';
 import { MercureService, MercureMessage } from '../../core/services/mercure.service';
 import { ReportChatService, ReportThread, ReportMessage as ReportChatMessage } from '../../core/services/report-chat.service';
+import { ToastService } from '../../core/services/toast.service';
 import {
   DashboardResponse,
   AdminUser,
@@ -41,9 +41,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly adminService = inject(AdminService);
   private readonly authService = inject(AuthService);
   private readonly tokenService = inject(TokenService);
-  private readonly notificationService = inject(NotificationService);
   private readonly mercureService = inject(MercureService);
   private readonly reportChatService = inject(ReportChatService);
+  private readonly toastService = inject(ToastService);
 
   // Dashboard data
   dashboardData = signal<DashboardResponse | null>(null);
@@ -118,6 +118,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   auditActionFilter = signal('');
   auditSearchQuery = signal('');
 
+  // Audit detail modal
+  selectedAuditLog = signal<AuditLogResponse | null>(null);
+
   ngOnInit(): void {
     this.loadDashboard();
     if (this.isAdmin()) {
@@ -138,13 +141,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Subscribe to new report messages
     this.mercureService.subscribeToAdminReports((data) => {
       const sender = data.sender;
-      this.notificationService.addLocalNotification({
-        type: 'info',
-        title: 'Nouveau rapport',
-        message: sender?.email
+      this.toastService.info(
+        'Nouveau rapport',
+        sender?.email
           ? `${sender.nomComplet || sender.email} a envoyé un message.`
           : 'Nouveau message reçu.'
-      });
+      );
 
       // Update reports badge in accordion
       this.accordionSections.update(sections =>
@@ -170,11 +172,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.mercureService.subscribeToAdminNotifications((data) => {
       const notification = data['notification'] as { title: string; message: string; type: string } | undefined;
       if (notification) {
-        this.notificationService.addLocalNotification({
-          type: notification.type || 'info',
-          title: notification.title,
-          message: notification.message
-        });
+        const toastType = (notification.type || 'info') as 'success' | 'error' | 'warning' | 'info';
+        this.toastService.show(toastType, notification.title, notification.message);
       }
     });
 
@@ -356,11 +355,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         );
         this.cancelEditRoles();
         this.savingRoles.set(false);
-        this.notificationService.addLocalNotification({
-          type: 'success',
-          title: 'Rôles mis à jour',
-          message: `Les rôles de ${response.user.email} ont été modifiés.`
-        });
+        this.toastService.success(
+          'Rôles mis à jour',
+          `Les rôles de ${response.user.email} ont été modifiés.`
+        );
       },
       error: (err) => {
         this.usersError.set(err.message || 'Erreur lors de la mise à jour des rôles');
@@ -397,11 +395,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         );
         this.suspendModal.set(null);
         this.actionLoading.set(null);
-        this.notificationService.addLocalNotification({
-          type: 'warning',
-          title: 'Utilisateur suspendu',
-          message: `${response.user.email} a été suspendu.`
-        });
+        this.toastService.warning(
+          'Utilisateur suspendu',
+          `${response.user.email} a été suspendu.`
+        );
       },
       error: (err) => {
         this.usersError.set(err.message);
@@ -419,11 +416,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           users.map(u => u.id === user.id ? response.user : u)
         );
         this.actionLoading.set(null);
-        this.notificationService.addLocalNotification({
-          type: 'success',
-          title: 'Suspension levée',
-          message: `${response.user.email} n'est plus suspendu.`
-        });
+        this.toastService.success(
+          'Suspension levée',
+          `${response.user.email} n'est plus suspendu.`
+        );
       },
       error: (err) => {
         this.usersError.set(err.message);
@@ -445,11 +441,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           users.map(u => u.id === user.id ? response.user : u)
         );
         this.actionLoading.set(null);
-        this.notificationService.addLocalNotification({
-          type: 'success',
-          title: 'Utilisateur restauré',
-          message: `${response.user.email} a été restauré.`
-        });
+        this.toastService.success(
+          'Utilisateur restauré',
+          `${response.user.email} a été restauré.`
+        );
       },
       error: (err) => {
         this.usersError.set(err.message);
@@ -476,11 +471,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           );
           this.confirmAction.set(null);
           this.actionLoading.set(null);
-          this.notificationService.addLocalNotification({
-            type: 'info',
-            title: 'Utilisateur supprimé',
-            message: `${response.user.email} a été supprimé (soft delete).`
-          });
+          this.toastService.info(
+            'Utilisateur supprimé',
+            `${response.user.email} a été supprimé (soft delete).`
+          );
         },
         error: (err) => {
           this.usersError.set(err.message);
@@ -493,11 +487,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.users.update(users => users.filter(u => u.id !== action.user.id));
           this.confirmAction.set(null);
           this.actionLoading.set(null);
-          this.notificationService.addLocalNotification({
-            type: 'error',
-            title: 'Utilisateur supprimé définitivement',
-            message: `${action.user.email} a été supprimé définitivement.`
-          });
+          this.toastService.error(
+            'Utilisateur supprimé définitivement',
+            `${action.user.email} a été supprimé définitivement.`
+          );
         },
         error: (err) => {
           this.usersError.set(err.message);
@@ -534,11 +527,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           new Date(response.expiresAt)
         );
         this.actionLoading.set(null);
-        this.notificationService.addLocalNotification({
-          type: 'warning',
-          title: 'Impersonation active',
-          message: `Vous agissez en tant que ${response.targetUser.email}. Expire à ${new Date(response.expiresAt).toLocaleTimeString()}.`
-        });
+        this.toastService.warning(
+          'Impersonation active',
+          `Vous agissez en tant que ${response.targetUser.email}. Expire à ${new Date(response.expiresAt).toLocaleTimeString()}.`
+        );
         // Reload page to reflect new user context
         window.location.reload();
       },
@@ -571,11 +563,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: () => {
         this.deleteRequests.update(requests => requests.filter(r => r.id !== request.id));
         this.loadDashboard(); // Refresh stats
-        this.notificationService.addLocalNotification({
-          type: 'success',
-          title: 'Demande approuvée',
-          message: `La demande de suppression de ${request.user.email} a été approuvée.`
-        });
+        this.toastService.success(
+          'Demande approuvée',
+          `La demande de suppression de ${request.user.email} a été approuvée.`
+        );
       },
       error: (err) => {
         this.usersError.set(err.message);
@@ -589,11 +580,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: () => {
         this.deleteRequests.update(requests => requests.filter(r => r.id !== request.id));
         this.loadDashboard(); // Refresh stats
-        this.notificationService.addLocalNotification({
-          type: 'info',
-          title: 'Demande rejetée',
-          message: `La demande de suppression de ${request.user.email} a été rejetée.`
-        });
+        this.toastService.info(
+          'Demande rejetée',
+          `La demande de suppression de ${request.user.email} a été rejetée.`
+        );
       },
       error: (err) => {
         this.usersError.set(err.message);
@@ -726,11 +716,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.reports.update(reports =>
           reports.map(r => r.id === report.id ? response.thread : r)
         );
-        this.notificationService.addLocalNotification({
-          type: 'success',
-          title: 'Statut mis à jour',
-          message: `Le rapport a été marqué comme ${status}.`
-        });
+        this.toastService.success(
+          'Statut mis à jour',
+          `Le rapport a été marqué comme ${status}.`
+        );
       }
     });
   }
@@ -831,5 +820,80 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (action.includes('ROLE') || action.includes('SUSPEND')) return 'action-admin';
     if (action.includes('IMPERSONATION')) return 'action-impersonate';
     return 'action-default';
+  }
+
+  // === AUDIT LOG DETAIL MODAL ===
+
+  openAuditDetail(log: AuditLogResponse): void {
+    this.selectedAuditLog.set(log);
+  }
+
+  closeAuditDetail(): void {
+    this.selectedAuditLog.set(null);
+  }
+
+  getMetadataEntries(metadata: Record<string, unknown> | null): Array<{ key: string; label: string; value: string }> {
+    if (!metadata) return [];
+
+    const labelMap: Record<string, string> = {
+      'session_id': 'ID de session',
+      'reason': 'Raison',
+      'until': 'Jusqu\'au',
+      'old_roles': 'Anciens rôles',
+      'new_roles': 'Nouveaux rôles',
+      'email': 'Email',
+      'deleted_user_id': 'ID utilisateur supprimé',
+      'deleted_user_email': 'Email supprimé',
+      'changed_fields': 'Champs modifiés',
+      'duration': 'Durée',
+      'actions_count': 'Nombre d\'actions',
+      'pages_visited': 'Pages visitées'
+    };
+
+    return Object.entries(metadata).map(([key, value]) => ({
+      key,
+      label: labelMap[key] || key.replace(/_/g, ' '),
+      value: this.formatMetadataValue(key, value)
+    }));
+  }
+
+  private formatMetadataValue(key: string, value: unknown): string {
+    if (value === null || value === undefined) return '-';
+
+    if (key === 'until' && typeof value === 'string') {
+      return this.formatDate(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+
+    if (typeof value === 'object') {
+      return JSON.stringify(value, null, 2);
+    }
+
+    return String(value);
+  }
+
+  getBrowserFromUserAgent(userAgent: string | null): string {
+    if (!userAgent) return 'Inconnu';
+
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Edg')) return 'Edge';
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Safari')) return 'Safari';
+    if (userAgent.includes('Opera') || userAgent.includes('OPR')) return 'Opera';
+    return 'Autre';
+  }
+
+  getOSFromUserAgent(userAgent: string | null): string {
+    if (!userAgent) return 'Inconnu';
+
+    if (userAgent.includes('Windows')) return 'Windows';
+    if (userAgent.includes('Mac OS')) return 'macOS';
+    if (userAgent.includes('Linux')) return 'Linux';
+    if (userAgent.includes('Android')) return 'Android';
+    if (userAgent.includes('iOS') || userAgent.includes('iPhone')) return 'iOS';
+    return 'Autre';
   }
 }

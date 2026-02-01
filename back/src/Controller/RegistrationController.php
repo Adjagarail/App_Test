@@ -12,11 +12,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Psr\Log\LoggerInterface;
 
 class RegistrationController extends AbstractController
 {
     public function __construct(
-        private readonly MailerService $mailerService
+        private readonly MailerService $mailerService,
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -93,9 +95,12 @@ class RegistrationController extends AbstractController
         // Send verification email (don't fail registration if email fails)
         try {
             $this->mailerService->sendEmailVerification($user, $verificationToken->getToken());
+            $this->logger->info('Verification email sent successfully to: ' . $user->getEmail());
         } catch (\Exception $e) {
-            // Log the error but don't fail registration
-            // In production, you might want to queue this for retry
+            $this->logger->error('Failed to send verification email: ' . $e->getMessage(), [
+                'email' => $user->getEmail(),
+                'exception' => $e,
+            ]);
         }
 
         return new JsonResponse([

@@ -2,11 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\ImpersonationActivity;
 use App\Entity\ImpersonationSession;
 use App\Entity\User;
 use App\Repository\ImpersonationSessionRepository;
 use App\Repository\UserRepository;
 use App\Service\AuditService;
+use App\Service\ImpersonationActivityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,7 +27,8 @@ class ImpersonationController extends AbstractController
         private readonly UserRepository $userRepository,
         private readonly ImpersonationSessionRepository $sessionRepository,
         private readonly JWTTokenManagerInterface $jwtManager,
-        private readonly AuditService $auditService
+        private readonly AuditService $auditService,
+        private readonly ImpersonationActivityService $activityService
     ) {
     }
 
@@ -113,8 +116,14 @@ class ImpersonationController extends AbstractController
         // Generate impersonation token
         $impersonationToken = $this->generateImpersonationToken($targetUser, $session);
 
-        // Audit
-        $this->auditService->logImpersonationStart($admin, $targetUser, $session->getId());
+        // Audit with full details
+        $this->auditService->logImpersonationStart(
+            $admin,
+            $targetUser,
+            $session->getId(),
+            $reason,
+            $session->getExpiresAt()
+        );
 
         return new JsonResponse([
             'message' => 'Impersonation démarrée',
@@ -155,16 +164,31 @@ class ImpersonationController extends AbstractController
 
         $targetUser = $session->getTargetUser();
 
+        // Calculate session duration
+        $startTime = $session->getCreatedAt();
+        $endTime = new \DateTimeImmutable();
+        $interval = $startTime->diff($endTime);
+        $duration = $interval->format('%i min %s sec');
+        if ($interval->h > 0) {
+            $duration = $interval->format('%h h %i min');
+        }
+
         // Revoke the session
         $session->revoke();
         $this->entityManager->flush();
 
-        // Audit
-        $this->auditService->logImpersonationStop($admin, $targetUser, $session->getId());
+        // Audit with session details
+        $this->auditService->logImpersonationStop(
+            $admin,
+            $targetUser,
+            $session->getId(),
+            $duration
+        );
 
         return new JsonResponse([
             'message' => 'Impersonation terminée',
             'sessionId' => $session->getId(),
+            'duration' => $duration,
         ]);
     }
 
@@ -197,6 +221,106 @@ class ImpersonationController extends AbstractController
                 ],
                 'createdAt' => $session->getCreatedAt()->format('c'),
                 'expiresAt' => $session->getExpiresAt()->format('c'),
+            ],
+        ]);
+    }
+
+    /**
+     * Get impersonation session history with activities.
+     * GET /api/admin/impersonation/sessions
+     */
+    #[Route('/impersonation/sessions', name: 'api_admin_impersonate_sessions', methods: ['GET'])]
+    public function getImpersonationSessions(Request $request): JsonResponse
+    {
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = min(50, max(1, $request->query->getInt('limit', 10)));
+
+        $result = $this->sessionRepository->findAllPaginated($page, $limit);
+
+        $sessionsData = array_map(function (ImpersonationSession $session) {
+            $summary = $this->activityService->getSessionSummary($session);
+
+            return [
+                'id' => $session->getId(),
+                'impersonator' => [
+                    'id' => $session->getImpersonator()->getId(),
+                    'email' => $session->getImpersonator()->getEmail(),
+                    'nomComplet' => $session->getImpersonator()->getNomComplet(),
+                ],
+                'targetUser' => [
+                    'id' => $session->getTargetUser()->getId(),
+                    'email' => $session->getTargetUser()->getEmail(),
+                    'nomComplet' => $session->getTargetUser()->getNomComplet(),
+                ],
+                'reason' => $session->getReason(),
+                'createdAt' => $session->getCreatedAt()->format('c'),
+                'expiresAt' => $session->getExpiresAt()->format('c'),
+                'revokedAt' => $session->getRevokedAt()?->format('c'),
+                'isActive' => $session->isActive(),
+                'ip' => $session->getIp(),
+                'summary' => $summary,
+            ];
+        }, $result['items']);
+
+        return new JsonResponse([
+            'sessions' => $sessionsData,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $result['total'],
+                'totalPages' => (int) ceil($result['total'] / $limit),
+            ],
+        ]);
+    }
+
+    /**
+     * Get activities for a specific impersonation session.
+     * GET /api/admin/impersonation/sessions/{sessionId}/activities
+     */
+    #[Route('/impersonation/sessions/{sessionId}/activities', name: 'api_admin_impersonate_session_activities', methods: ['GET'])]
+    public function getSessionActivities(string $sessionId, Request $request): JsonResponse
+    {
+        $session = $this->sessionRepository->find($sessionId);
+
+        if (!$session) {
+            return new JsonResponse([
+                'error' => [
+                    'code' => 'SESSION_NOT_FOUND',
+                    'message' => 'Session d\'impersonation non trouvée',
+                ],
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = min(100, max(1, $request->query->getInt('limit', 50)));
+
+        $result = $this->activityService->getSessionActivitiesPaginated($session, $page, $limit);
+
+        $activitiesData = array_map(function (ImpersonationActivity $activity) {
+            return [
+                'id' => $activity->getId(),
+                'type' => $activity->getType(),
+                'action' => $activity->getAction(),
+                'path' => $activity->getPath(),
+                'method' => $activity->getMethod(),
+                'details' => $activity->getDetails(),
+                'createdAt' => $activity->getCreatedAt()->format('c'),
+            ];
+        }, $result['items']);
+
+        return new JsonResponse([
+            'session' => [
+                'id' => $session->getId(),
+                'impersonator' => $session->getImpersonator()->getEmail(),
+                'targetUser' => $session->getTargetUser()->getEmail(),
+                'createdAt' => $session->getCreatedAt()->format('c'),
+            ],
+            'activities' => $activitiesData,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $result['total'],
+                'totalPages' => (int) ceil($result['total'] / $limit),
             ],
         ]);
     }

@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, HostListener, OnInit, OnDestroy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { AuthService, NotificationService, TokenService, AdminService, ReportChatService, MercureService } from '../../../core/services';
+import { AuthService, NotificationService, TokenService, AdminService, ReportChatService, MercureService, ToastService } from '../../../core/services';
 import { Notification } from '../../../core/models';
 import { ReportThread, ReportMessage } from '../../../core/services/report-chat.service';
 
@@ -20,6 +20,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private readonly adminService = inject(AdminService);
   private readonly reportChatService = inject(ReportChatService);
   private readonly mercureService = inject(MercureService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   // Auth signals
@@ -148,14 +149,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     // For regular users (not admins), subscribe to report responses
     if (!this.isAdmin()) {
       this.mercureService.subscribeToMyReports(user.id, (data) => {
-        // Show notification for new admin response
-        this.notificationService.addLocalNotification({
-          type: 'info',
-          title: 'Nouveau message',
-          message: data.admin?.nomComplet
+        // Show toast notification for new admin response (visual feedback only)
+        this.toastService.info(
+          'Nouveau message',
+          data.admin?.nomComplet
             ? `${data.admin.nomComplet} a répondu à votre rapport`
             : 'Un administrateur a répondu à votre rapport'
-        });
+        );
 
         // Refresh reports if modal is open
         if (this.reportModalOpen()) {
@@ -270,11 +270,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.adminService.stopImpersonation().subscribe({
       next: () => {
         this.tokenService.stopImpersonation();
-        this.notificationService.addLocalNotification({
-          type: 'info',
-          title: 'Impersonation terminée',
-          message: 'Vous êtes de retour à votre compte admin.'
-        });
+        this.toastService.info(
+          'Impersonation terminée',
+          'Vous êtes de retour à votre compte admin.'
+        );
         window.location.reload();
       },
       error: () => {
@@ -333,22 +332,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.reportLoading.set(true);
     this.reportChatService.createReport({ subject: subject || undefined, message }).subscribe({
       next: () => {
-        this.notificationService.addLocalNotification({
-          type: 'success',
-          title: 'Rapport envoyé',
-          message: 'Votre message a été envoyé aux administrateurs.'
-        });
+        this.toastService.success(
+          'Rapport envoyé',
+          'Votre message a été envoyé aux administrateurs.'
+        );
         this.newReportSubject.set('');
         this.newReportMessage.set('');
         this.reportChatOpen.set(false);
         this.loadMyReports();
       },
       error: () => {
-        this.notificationService.addLocalNotification({
-          type: 'error',
-          title: 'Erreur',
-          message: 'Impossible d\'envoyer le rapport.'
-        });
+        this.toastService.error(
+          'Erreur',
+          'Impossible d\'envoyer le rapport.'
+        );
         this.reportLoading.set(false);
       }
     });
@@ -385,11 +382,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.chatMessage.set('');
       },
       error: () => {
-        this.notificationService.addLocalNotification({
-          type: 'error',
-          title: 'Erreur',
-          message: 'Impossible d\'envoyer le message.'
-        });
+        this.toastService.error(
+          'Erreur',
+          'Impossible d\'envoyer le message.'
+        );
       }
     });
   }

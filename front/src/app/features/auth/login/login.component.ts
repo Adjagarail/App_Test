@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { MercureService } from '../../../core/services/mercure.service';
+import { TokenService } from '../../../core/services/token.service';
 import { LoginCredentials } from '../../../core/models';
 
 @Component({
@@ -15,6 +17,8 @@ import { LoginCredentials } from '../../../core/models';
 
 export class LoginComponent {
   private readonly authService = inject(AuthService);
+  private readonly mercureService = inject(MercureService);
+  private readonly tokenService = inject(TokenService);
   private readonly router = inject(Router);
 
   credentials: LoginCredentials = {
@@ -36,6 +40,13 @@ export class LoginComponent {
     this.authService.login(this.credentials).subscribe({
       next: () => {
         const isAdmin = this.authService.isAdmin();
+        const userId = this.tokenService.getUserId();
+
+        // Initialize Mercure subscriptions for real-time updates
+        if (userId) {
+          this.mercureService.initializeForUser(userId, isAdmin);
+        }
+
         if (isAdmin) {
           this.router.navigate(['/dashboard']);
         } else {

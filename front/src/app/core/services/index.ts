@@ -6,3 +6,4 @@ export * from './notification.service';
 export * from './user.service';
 export * from './mercure.service';
 export * from './report-chat.service';
+export * from './toast.service';

@@ -83,6 +83,36 @@ class ImpersonationSessionRepository extends ServiceEntityRepository
             ->execute();
     }
 
+    /**
+     * Find all sessions with pagination.
+     */
+    public function findAllPaginated(int $page = 1, int $limit = 10): array
+    {
+        $offset = ($page - 1) * $limit;
+
+        $qb = $this->createQueryBuilder('s')
+            ->leftJoin('s.impersonator', 'i')
+            ->leftJoin('s.targetUser', 't')
+            ->addSelect('i', 't');
+
+        $total = (clone $qb)
+            ->select('COUNT(s.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $items = $qb
+            ->orderBy('s.createdAt', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'items' => $items,
+            'total' => (int) $total,
+        ];
+    }
+
     public function save(ImpersonationSession $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);

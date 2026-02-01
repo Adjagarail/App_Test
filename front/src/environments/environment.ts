@@ -1,4 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: '/api'
+  apiUrl: '/api',
+  mercureUrl: 'http://localhost:3000/.well-known/mercure'
 };

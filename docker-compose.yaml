@@ -86,7 +86,23 @@ services:
     networks:
       - symfony
     restart: unless-stopped
-    
+
+  mercure:
+    image: dunglas/mercure
+    container_name: ApplicationFirst_mercure
+    ports:
+      - "3000:80"
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_PUBLISHER_JWT_KEY: 'my-super-secret-mercure-publisher-key-at-least-256-bits'
+      MERCURE_SUBSCRIBER_JWT_KEY: 'my-super-secret-mercure-subscriber-key-at-least-256-bits'
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins http://localhost:4200
+        anonymous
+    networks:
+      - symfony
+    restart: unless-stopped
+
 networks:
   symfony:
     driver: bridge

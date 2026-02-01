@@ -3,16 +3,26 @@ export interface User {
   email: string;
   roles: string[];
   nomComplet?: string;
+  dateInscription?: string;
+  dateDerniereConnexion?: string;
+  isEmailVerified?: boolean;
+  emailVerifiedAt?: string;
+  isSuspended?: boolean;
+  suspendedUntil?: string;
+  suspensionReason?: string;
+  deletedAt?: string;
 }
 
 export interface Notification {
-  id: string;
+  id: number;
+  type: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
   read: boolean;
-  createdAt: Date;
+  createdAt: string;
+  readAt?: string;
   link?: string;
+  payload?: Record<string, unknown>;
 }
 
 export interface LoginCredentials {
@@ -25,3 +35,12 @@ export interface RegisterData {
   password: string;
   nomComplet?: string;
 }
+
+// User roles
+export type UserRole =
+  | 'ROLE_USER'
+  | 'ROLE_SEMI_ADMIN'
+  | 'ROLE_MODERATOR'
+  | 'ROLE_ANALYST'
+  | 'ROLE_ADMIN'
+  | 'ROLE_SUPER_ADMIN';

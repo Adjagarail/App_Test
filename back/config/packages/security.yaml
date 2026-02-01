@@ -9,6 +9,7 @@ security:
     ROLE_MODERATOR: ROLE_USER
     ROLE_ANALYST: ROLE_USER
     ROLE_ADMIN: [ROLE_SEMI_ADMIN, ROLE_MODERATOR, ROLE_ANALYST]
+    ROLE_SUPER_ADMIN: ROLE_ADMIN
 
   providers:
     app_user_provider:
@@ -26,6 +27,7 @@ security:
       pattern: ^/api/login
       stateless: true
       provider: app_user_provider
+      user_checker: App\Security\UserChecker
       json_login:
         check_path: /api/login_check
         username_path: email
@@ -37,11 +39,13 @@ security:
     refresh:
       pattern: ^/api/token/refresh
       stateless: true
+      user_checker: App\Security\UserChecker
 
     # Firewall principal - toutes les autres routes protégées par JWT
     main:
       stateless: true
       provider: app_user_provider
+      user_checker: App\Security\UserChecker
       jwt: ~
 
   # Contrôle d'accès
@@ -50,9 +54,15 @@ security:
     - { path: ^/api/login, roles: PUBLIC_ACCESS }
     - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
     - { path: ^/api/password, roles: PUBLIC_ACCESS }  # Reset password
+    - { path: ^/api/auth/verify-email, roles: PUBLIC_ACCESS }  # Email verification
+    - { path: ^/api/auth/resend-verification, roles: PUBLIC_ACCESS }  # Resend verification
     - { path: ^/register, roles: PUBLIC_ACCESS }
     - { path: ^/$, roles: PUBLIC_ACCESS }  # Page d'accueil
     - { path: ^/jwt-example.html, roles: PUBLIC_ACCESS }  # Page de test
+
+    # Routes super admin - ROLE_SUPER_ADMIN requis
+    - { path: ^/api/admin/users/\d+/impersonate, roles: ROLE_SUPER_ADMIN }
+    - { path: ^/api/admin/impersonation, roles: ROLE_SUPER_ADMIN }
 
     # Routes admin - ROLE_ADMIN requis
     - { path: ^/api/admin, roles: ROLE_ADMIN }

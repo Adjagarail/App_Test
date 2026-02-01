@@ -1,7 +1,7 @@
 <div class="dashboard-container">
   <header class="dashboard-header">
     <h1>Dashboard Administrateur</h1>
-    <p class="welcome">Bienvenue, {{ dashboardData()?.user?.nomComplet }} </p>
+    <p class="welcome">Bienvenue, {{ dashboardData()?.user?.nomComplet }}</p>
   </header>
 
   @if (loading()) {
@@ -20,10 +20,7 @@
 
   @if (dashboardData() && !loading()) {
     <div class="dashboard-content">
-      <div class="message-card">
-        <p>{{ dashboardData()?.message }}</p>
-      </div>
-
+      <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon users-icon">
@@ -37,71 +34,137 @@
           </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card realtime">
           <div class="stat-icon logins-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
           </div>
           <div class="stat-info">
-            <span class="stat-value">{{ dashboardData()?.stats?.todayLogins ?? 0 }}</span>
-            <span class="stat-label">Sessions actives</span>
+            <span class="stat-value">
+              @if (activeUsersCount() > 0) {
+                {{ activeUsersCount() }}
+              } @else {
+                {{ dashboardData()?.stats?.activeSessions ?? 0 }}
+              }
+            </span>
+            <span class="stat-label">Sessions actives <span class="live-badge">LIVE</span></span>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-icon pending-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ dashboardData()?.stats?.pendingDeleteRequests ?? 0 }}</span>
+            <span class="stat-label">Demandes en attente</span>
+          </div>
+        </div>
+
+        <div class="stat-card danger">
+          <div class="stat-icon suspended-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ dashboardData()?.stats?.suspendedUsers ?? 0 }}</span>
+            <span class="stat-label">Suspendus</span>
           </div>
         </div>
       </div>
 
+      <!-- User Info -->
       <div class="user-info-card">
         <h3>Informations utilisateur</h3>
         <div class="info-row">
           <span class="label">Email:</span>
           <span class="value">{{ dashboardData()?.user?.email }}</span>
         </div>
-
         <div class="info-row">
           <span class="label">Nom:</span>
           <span class="value">{{ dashboardData()?.user?.nomComplet }}</span>
         </div>
-
         <div class="info-row">
           <span class="label">Rôles:</span>
           <div class="roles">
             @for (role of dashboardData()?.user?.roles; track role) {
-              <span class="role-badge" [class.admin]="role === 'ROLE_ADMIN'">{{ role }}</span>
+              <span class="role-badge" [class.admin]="role === 'ROLE_ADMIN'" [class.super-admin]="role === 'ROLE_SUPER_ADMIN'">{{ role }}</span>
             }
           </div>
         </div>
       </div>
 
-      <!-- SECTION ACCORDÉON ADMIN -->
+      <!-- ADMIN ACCORDION SECTIONS -->
       @if (isAdmin()) {
         <div class="accordion-container">
           @for (section of accordionSections(); track section.id) {
             <div class="accordion-section" [class.open]="section.isOpen">
               <button class="accordion-header" (click)="toggleSection(section.id)">
                 <div class="accordion-title">
-                  <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+                  @if (section.id === 'users') {
+                    <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  } @else if (section.id === 'delete-requests') {
+                    <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  } @else if (section.id === 'reports') {
+                    <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  } @else if (section.id === 'audit-logs') {
+                    <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                  }
                   <span>{{ section.title }}</span>
+                  @if (getSectionBadge(section.id)) {
+                    <span class="section-badge">{{ getSectionBadge(section.id) }}</span>
+                  }
                 </div>
                 <svg class="chevron" [class.rotated]="section.isOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
+              <!-- USERS SECTION -->
               @if (section.isOpen && section.id === 'users') {
                 <div class="accordion-content">
-                  <!-- Barre de recherche -->
-                  <div class="search-bar">
-                    <input
-                      type="text"
-                      placeholder="Rechercher par email ou nom..."
-                      [ngModel]="searchQuery()"
-                      (ngModelChange)="searchQuery.set($event)"
-                      (keyup.enter)="onSearch()"
-                      class="search-input"
-                    />
-                    <button class="btn btn-primary" (click)="onSearch()">Rechercher</button>
+                  <!-- Filters -->
+                  <div class="filters-bar">
+                    <div class="search-group">
+                      <input
+                        type="text"
+                        placeholder="Rechercher par email ou nom..."
+                        [ngModel]="searchQuery()"
+                        (ngModelChange)="searchQuery.set($event)"
+                        (keyup.enter)="onSearch()"
+                        class="search-input"
+                      />
+                      <button class="btn btn-primary" (click)="onSearch()">Rechercher</button>
+                    </div>
+
+                    <div class="filter-group">
+                      <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); onFilterChange()">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actif</option>
+                        <option value="suspended">Suspendu</option>
+                        <option value="deleted">Supprimé</option>
+                        <option value="unverified">Non vérifié</option>
+                      </select>
+
+                      <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event); onFilterChange()">
+                        <option value="">Tous les rôles</option>
+                        @for (role of availableRoles(); track role.code) {
+                          <option [value]="role.code">{{ role.label }}</option>
+                        }
+                      </select>
+                    </div>
                   </div>
 
                   @if (usersLoading()) {
@@ -121,18 +184,46 @@
                         <thead>
                           <tr>
                             <th>ID</th>
-                            <th>Email</th>
-                            <th>Nom</th>
+                            <th class="sortable" (click)="onSortChange('email')">
+                              Email
+                              @if (sortBy() === 'email') {
+                                <span class="sort-icon">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                              }
+                            </th>
+                            <th class="sortable" (click)="onSortChange('nomComplet')">
+                              Nom
+                              @if (sortBy() === 'nomComplet') {
+                                <span class="sort-icon">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                              }
+                            </th>
+                            <th>Statut</th>
                             <th>Rôles</th>
+                            <th class="sortable" (click)="onSortChange('dateInscription')">
+                              Inscription
+                              @if (sortBy() === 'dateInscription') {
+                                <span class="sort-icon">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                              }
+                            </th>
+                            <th class="sortable" (click)="onSortChange('dateDerniereConnexion')">
+                              Dernière connexion
+                              @if (sortBy() === 'dateDerniereConnexion') {
+                                <span class="sort-icon">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                              }
+                            </th>
                             <th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           @for (user of users(); track user.id) {
-                            <tr>
+                            <tr [class]="getUserStatusClass(user)" class="clickable-row" (click)="viewUserDetails(user)">
                               <td>{{ user.id }}</td>
                               <td>{{ user.email }}</td>
                               <td>{{ user.nomComplet || '-' }}</td>
+                              <td>
+                                <span class="status-badge" [class]="getUserStatusClass(user)">
+                                  {{ getUserStatusLabel(user) }}
+                                </span>
+                              </td>
                               <td>
                                 @if (editingUserId() === user.id) {
                                   <div class="roles-edit">
@@ -141,7 +232,7 @@
                                         <input
                                           type="checkbox"
                                           [checked]="isRoleSelected(role.code)"
-                                          [disabled]="role.code === 'ROLE_USER'"
+                                          [disabled]="role.code === 'ROLE_USER' || (role.code === 'ROLE_SUPER_ADMIN' && !isSuperAdmin())"
                                           (change)="toggleRole(role.code)"
                                         />
                                         <span>{{ role.label }}</span>
@@ -151,39 +242,62 @@
                                 } @else {
                                   <div class="roles">
                                     @for (role of user.roles; track role) {
-                                      <span class="role-badge role-badge-small" [class.admin]="role === 'ROLE_ADMIN'">{{ role }}</span>
+                                      <span class="role-badge role-badge-small" [class.admin]="role === 'ROLE_ADMIN'" [class.super-admin]="role === 'ROLE_SUPER_ADMIN'">{{ role }}</span>
                                     }
                                   </div>
                                 }
                               </td>
-                              <td>
-                                @if (editingUserId() === user.id) {
-                                  <div class="action-buttons">
-                                    <button
-                                      class="btn btn-success btn-small"
-                                      (click)="saveRoles()"
-                                      [disabled]="savingRoles()"
-                                    >
-                                      {{ savingRoles() ? 'Sauvegarde...' : 'Sauvegarder' }}
+                              <td>{{ formatDate(user.dateInscription) }}</td>
+                              <td>{{ formatDate(user.dateDerniereConnexion) }}</td>
+                              <td (click)="$event.stopPropagation()">
+                                <div class="action-buttons">
+                                  @if (editingUserId() === user.id) {
+                                    <button class="btn btn-success btn-small" (click)="saveRoles()" [disabled]="savingRoles()">
+                                      {{ savingRoles() ? '...' : 'Sauver' }}
                                     </button>
-                                    <button
-                                      class="btn btn-secondary btn-small"
-                                      (click)="cancelEditRoles()"
-                                      [disabled]="savingRoles()"
-                                    >
+                                    <button class="btn btn-secondary btn-small" (click)="cancelEditRoles()" [disabled]="savingRoles()">
                                       Annuler
                                     </button>
-                                  </div>
-                                } @else {
-                                  <button
-                                    class="btn btn-primary btn-small"
-                                    (click)="startEditRoles(user)"
-                                    [disabled]="isCurrentUser(user.id)"
-                                    [title]="isCurrentUser(user.id) ? 'Vous ne pouvez pas modifier vos propres rôles' : 'Modifier les rôles'"
-                                  >
-                                    Modifier
-                                  </button>
-                                }
+                                  } @else {
+                                    @if (!isCurrentUser(user.id)) {
+                                      <button class="btn btn-primary btn-small" (click)="startEditRoles(user)" title="Modifier les rôles">
+                                        Rôles
+                                      </button>
+
+                                      @if (!user.isSuspended && !user.deletedAt) {
+                                        <button class="btn btn-warning btn-small" (click)="suspendUser(user)" [disabled]="actionLoading() === user.id">
+                                          Suspendre
+                                        </button>
+                                      }
+                                      @if (user.isSuspended && !user.deletedAt) {
+                                        <button class="btn btn-success btn-small" (click)="unsuspendUser(user)" [disabled]="actionLoading() === user.id">
+                                          Réactiver
+                                        </button>
+                                      }
+
+                                      @if (!user.deletedAt) {
+                                        <button class="btn btn-danger btn-small" (click)="softDeleteUser(user)" [disabled]="actionLoading() === user.id">
+                                          Supprimer
+                                        </button>
+                                      } @else {
+                                        <button class="btn btn-info btn-small" (click)="restoreUser(user)" [disabled]="actionLoading() === user.id">
+                                          Restaurer
+                                        </button>
+                                        <button class="btn btn-danger btn-small" (click)="hardDeleteUser(user)" [disabled]="actionLoading() === user.id">
+                                          Purger
+                                        </button>
+                                      }
+
+                                      @if (canImpersonate(user)) {
+                                        <button class="btn btn-purple btn-small" (click)="startImpersonation(user)" [disabled]="actionLoading() === user.id" title="Se connecter en tant que cet utilisateur">
+                                          Impersonate
+                                        </button>
+                                      }
+                                    } @else {
+                                      <span class="current-user-badge">Vous</span>
+                                    }
+                                  }
+                                </div>
                               </td>
                             </tr>
                           }
@@ -194,22 +308,13 @@
                     <!-- Pagination -->
                     @if (pagination().totalPages > 1) {
                       <div class="pagination">
-                        <button
-                          class="btn btn-secondary btn-small"
-                          [disabled]="pagination().page === 1"
-                          (click)="onPageChange(pagination().page - 1)"
-                        >
+                        <button class="btn btn-secondary btn-small" [disabled]="pagination().page === 1" (click)="onPageChange(pagination().page - 1)">
                           Précédent
                         </button>
                         <span class="pagination-info">
-                          Page {{ pagination().page }} sur {{ pagination().totalPages }}
-                          ({{ pagination().total }} utilisateurs)
+                          Page {{ pagination().page }} sur {{ pagination().totalPages }} ({{ pagination().total }} utilisateurs)
                         </span>
-                        <button
-                          class="btn btn-secondary btn-small"
-                          [disabled]="pagination().page === pagination().totalPages"
-                          (click)="onPageChange(pagination().page + 1)"
-                        >
+                        <button class="btn btn-secondary btn-small" [disabled]="pagination().page === pagination().totalPages" (click)="onPageChange(pagination().page + 1)">
                           Suivant
                         </button>
                       </div>
@@ -221,10 +326,534 @@
                   }
                 </div>
               }
+
+              <!-- DELETE REQUESTS SECTION -->
+              @if (section.isOpen && section.id === 'delete-requests') {
+                <div class="accordion-content">
+                  @if (deleteRequestsLoading()) {
+                    <div class="loading-inline">
+                      <div class="spinner-small"></div>
+                      <span>Chargement...</span>
+                    </div>
+                  }
+
+                  @if (!deleteRequestsLoading() && deleteRequests().length > 0) {
+                    <div class="requests-list">
+                      @for (request of deleteRequests(); track request.id) {
+                        <div class="request-card">
+                          <div class="request-info">
+                            <strong>{{ request.user.email }}</strong>
+                            <span class="request-date">{{ formatDate(request.createdAt) }}</span>
+                            @if (request.message) {
+                              <p class="request-message">{{ request.message }}</p>
+                            }
+                          </div>
+                          <div class="request-actions">
+                            <button class="btn btn-success btn-small" (click)="approveDeleteRequest(request)">
+                              Approuver
+                            </button>
+                            <button class="btn btn-danger btn-small" (click)="rejectDeleteRequest(request)">
+                              Rejeter
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  @if (!deleteRequestsLoading() && deleteRequests().length === 0) {
+                    <p class="no-results">Aucune demande de suppression en attente.</p>
+                  }
+                </div>
+              }
+
+              <!-- REPORTS SECTION -->
+              @if (section.isOpen && section.id === 'reports') {
+                <div class="accordion-content">
+                  @if (reportsLoading()) {
+                    <div class="loading-inline">
+                      <div class="spinner-small"></div>
+                      <span>Chargement...</span>
+                    </div>
+                  }
+
+                  @if (!reportsLoading() && reports().length > 0) {
+                    <div class="reports-list">
+                      @for (report of reports(); track report.id) {
+                        <div class="report-card" [class.unread]="!report.isRead" (click)="openReport(report)">
+                          <div class="report-header">
+                            <span class="report-subject">{{ report.subject || 'Rapport' }}</span>
+                            <span class="report-status" [class]="getReportStatusClass(report.status)">
+                              {{ getReportStatusLabel(report.status) }}
+                            </span>
+                          </div>
+                          <div class="report-info">
+                            <span class="report-sender">{{ report.sender.email }}</span>
+                            <span class="report-date">{{ formatDate(report.createdAt) }}</span>
+                          </div>
+                          <p class="report-preview">{{ report.lastMessage }}</p>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  @if (!reportsLoading() && reports().length === 0) {
+                    <p class="no-results">Aucun rapport utilisateur.</p>
+                  }
+                </div>
+              }
+
+              <!-- AUDIT LOGS SECTION -->
+              @if (section.isOpen && section.id === 'audit-logs') {
+                <div class="accordion-content">
+                  <!-- Header with stats -->
+                  <div class="audit-header">
+                    <div class="audit-stats">
+                      <span class="audit-total">{{ auditLogsPagination().total }} événements</span>
+                    </div>
+                  </div>
+
+                  <!-- Filters -->
+                  <div class="filters-bar audit-filters">
+                    <div class="search-group">
+                      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Rechercher par email..."
+                        [ngModel]="auditSearchQuery()"
+                        (ngModelChange)="auditSearchQuery.set($event)"
+                        (keyup.enter)="onAuditSearch()"
+                        class="search-input search-input-icon"
+                      />
+                      <button class="btn btn-primary" (click)="onAuditSearch()">Rechercher</button>
+                    </div>
+
+                    <div class="filter-group">
+                      <select class="audit-select" [ngModel]="auditActionFilter()" (ngModelChange)="auditActionFilter.set($event); onAuditFilterChange()">
+                        <option value="">Toutes les actions</option>
+                        @for (action of auditActions(); track action.code) {
+                          <option [value]="action.code">{{ action.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+
+                  @if (auditLogsLoading()) {
+                    <div class="loading-inline">
+                      <div class="spinner-small"></div>
+                      <span>Chargement...</span>
+                    </div>
+                  }
+
+                  @if (!auditLogsLoading() && auditLogs().length > 0) {
+                    <div class="audit-timeline">
+                      @for (log of auditLogs(); track log.id) {
+                        <div class="audit-entry" [class]="getAuditActionClass(log.action)">
+                          <div class="audit-entry-icon">
+                            @switch (log.action) {
+                              @case ('LOGIN') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                </svg>
+                              }
+                              @case ('LOGOUT') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                              }
+                              @case ('LOGIN_FAILED') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                              }
+                              @case ('PASSWORD_CHANGE') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                </svg>
+                              }
+                              @case ('ROLES_UPDATED') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                              }
+                              @case ('SUSPENDED') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                </svg>
+                              }
+                              @case ('IMPERSONATION_START') {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              }
+                              @default {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              }
+                            }
+                          </div>
+
+                          <div class="audit-entry-content">
+                            <div class="audit-entry-header">
+                              <span class="audit-action-badge" [class]="getAuditActionClass(log.action)">
+                                {{ getAuditActionLabel(log.action) }}
+                              </span>
+                              <span class="audit-entry-time">{{ formatDate(log.createdAt) }}</span>
+                            </div>
+
+                            <div class="audit-entry-details">
+                              <div class="audit-entry-users">
+                                @if (log.actorUser) {
+                                  <div class="audit-user-info">
+                                    <span class="audit-label">Par:</span>
+                                    <span class="audit-value">{{ log.actorUser.nomComplet || log.actorUser.email }}</span>
+                                  </div>
+                                }
+                                @if (log.targetUser) {
+                                  <div class="audit-user-info">
+                                    <span class="audit-label">Sur:</span>
+                                    <span class="audit-value">{{ log.targetUser.nomComplet || log.targetUser.email }}</span>
+                                  </div>
+                                }
+                              </div>
+
+                              <div class="audit-entry-meta">
+                                @if (log.ip) {
+                                  <span class="audit-ip-badge" title="Adresse IP">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                    </svg>
+                                    {{ log.ip }}
+                                  </span>
+                                }
+                                @if (log.metadata && (log.metadata | json) !== '{}') {
+                                  <button class="audit-details-btn" [title]="log.metadata | json">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Détails
+                                  </button>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (auditLogsPagination().totalPages > 1) {
+                      <div class="pagination audit-pagination">
+                        <button class="btn btn-secondary btn-small" [disabled]="auditLogsPagination().page === 1" (click)="onAuditPageChange(auditLogsPagination().page - 1)">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                          </svg>
+                          Précédent
+                        </button>
+                        <span class="pagination-info">
+                          {{ auditLogsPagination().page }} / {{ auditLogsPagination().totalPages }}
+                        </span>
+                        <button class="btn btn-secondary btn-small" [disabled]="auditLogsPagination().page === auditLogsPagination().totalPages" (click)="onAuditPageChange(auditLogsPagination().page + 1)">
+                          Suivant
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  }
+
+                  @if (!auditLogsLoading() && auditLogs().length === 0) {
+                    <div class="audit-empty">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="48" height="48">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <p>Aucun log d'audit trouvé</p>
+                      <span>Les événements apparaîtront ici</span>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           }
         </div>
       }
+    </div>
+  }
+
+  <!-- Suspend Modal -->
+  @if (suspendModal()) {
+    <div class="modal-overlay" (click)="suspendModal.set(null)">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <h3>Suspendre {{ suspendModal()?.user?.email }}</h3>
+        <div class="form-group">
+          <label>Raison (optionnel)</label>
+          <textarea
+            [ngModel]="suspendModal()?.reason"
+            (ngModelChange)="updateSuspendReason($event)"
+            placeholder="Raison de la suspension..."
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label>Jusqu'au (optionnel)</label>
+          <input
+            type="datetime-local"
+            [ngModel]="suspendModal()?.until"
+            (ngModelChange)="updateSuspendUntil($event)"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" (click)="suspendModal.set(null)">Annuler</button>
+          <button class="btn btn-warning" (click)="confirmSuspend()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Suspension...' : 'Suspendre' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Confirm Action Modal -->
+  @if (confirmAction()) {
+    <div class="modal-overlay" (click)="cancelConfirmAction()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        @if (confirmAction()?.type === 'softDelete') {
+          <h3>Confirmer la suppression</h3>
+          <p>Voulez-vous vraiment supprimer <strong>{{ confirmAction()?.user?.email }}</strong> ?</p>
+          <p class="info-text">L'utilisateur sera désactivé mais pourra être restauré.</p>
+        } @else if (confirmAction()?.type === 'hardDelete') {
+          <h3>Suppression définitive</h3>
+          <p class="danger-text">Voulez-vous vraiment supprimer définitivement <strong>{{ confirmAction()?.user?.email }}</strong> ?</p>
+          <p class="danger-text">Cette action est irréversible.</p>
+        }
+        <div class="modal-actions">
+          <button class="btn btn-secondary" (click)="cancelConfirmAction()">Annuler</button>
+          <button class="btn btn-danger" (click)="executeConfirmedAction()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Suppression...' : 'Confirmer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- User Detail Modal -->
+  @if (selectedUser()) {
+    <div class="modal-overlay" (click)="closeUserDetails()">
+      <div class="modal modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Détails de l'utilisateur</h3>
+          <button class="modal-close" (click)="closeUserDetails()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="user-detail-content">
+          <!-- User Avatar & Name -->
+          <div class="user-detail-header">
+            <div class="user-avatar-large">
+              {{ selectedUser()?.nomComplet ? selectedUser()!.nomComplet![0].toUpperCase() : selectedUser()?.email?.[0]?.toUpperCase() }}
+            </div>
+            <div class="user-header-info">
+              <h4>{{ selectedUser()?.nomComplet || 'Nom non renseigné' }}</h4>
+              <p class="user-email">{{ selectedUser()?.email }}</p>
+              <span class="status-badge" [class]="getUserStatusClass(selectedUser()!)">
+                {{ getUserStatusLabel(selectedUser()!) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- User Info Grid -->
+          <div class="user-detail-grid">
+            <div class="detail-section">
+              <h5>Informations générales</h5>
+              <div class="detail-row">
+                <span class="detail-label">ID:</span>
+                <span class="detail-value">{{ selectedUser()?.id }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value">{{ selectedUser()?.email }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Nom complet:</span>
+                <span class="detail-value">{{ selectedUser()?.nomComplet || '-' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Email vérifié:</span>
+                <span class="detail-value" [class.verified]="selectedUser()?.isEmailVerified" [class.not-verified]="!selectedUser()?.isEmailVerified">
+                  {{ selectedUser()?.isEmailVerified ? 'Oui' : 'Non' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h5>Rôles</h5>
+              <div class="roles-list">
+                @for (role of selectedUser()?.roles; track role) {
+                  <span class="role-badge" [class.admin]="role === 'ROLE_ADMIN'" [class.super-admin]="role === 'ROLE_SUPER_ADMIN'">
+                    {{ role }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h5>Dates</h5>
+              <div class="detail-row">
+                <span class="detail-label">Inscription:</span>
+                <span class="detail-value">{{ formatDate(selectedUser()?.dateInscription || null) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Dernière connexion:</span>
+                <span class="detail-value">{{ formatDate(selectedUser()?.dateDerniereConnexion || null) }}</span>
+              </div>
+              @if (selectedUser()?.deletedAt) {
+                <div class="detail-row">
+                  <span class="detail-label">Supprimé le:</span>
+                  <span class="detail-value danger">{{ formatDate(selectedUser()?.deletedAt || null) }}</span>
+                </div>
+              }
+            </div>
+
+            @if (selectedUser()?.isSuspended) {
+              <div class="detail-section suspension-info">
+                <h5>Suspension</h5>
+                <div class="detail-row">
+                  <span class="detail-label">Suspendu:</span>
+                  <span class="detail-value danger">Oui</span>
+                </div>
+                @if (selectedUser()?.suspendedUntil) {
+                  <div class="detail-row">
+                    <span class="detail-label">Jusqu'au:</span>
+                    <span class="detail-value">{{ formatDate(selectedUser()?.suspendedUntil || null) }}</span>
+                  </div>
+                }
+                @if (selectedUser()?.suspensionReason) {
+                  <div class="detail-row">
+                    <span class="detail-label">Raison:</span>
+                    <span class="detail-value">{{ selectedUser()?.suspensionReason }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Actions -->
+          <div class="user-detail-actions">
+            @if (!isCurrentUser(selectedUser()!.id)) {
+              <button class="btn btn-primary" (click)="startEditRoles(selectedUser()!); closeUserDetails()">
+                Modifier les rôles
+              </button>
+
+              @if (!selectedUser()?.isSuspended && !selectedUser()?.deletedAt) {
+                <button class="btn btn-warning" (click)="suspendUser(selectedUser()!); closeUserDetails()">
+                  Suspendre
+                </button>
+              }
+              @if (selectedUser()?.isSuspended && !selectedUser()?.deletedAt) {
+                <button class="btn btn-success" (click)="unsuspendUser(selectedUser()!); closeUserDetails()">
+                  Réactiver
+                </button>
+              }
+
+              @if (!selectedUser()?.deletedAt) {
+                <button class="btn btn-danger" (click)="softDeleteUser(selectedUser()!); closeUserDetails()">
+                  Supprimer
+                </button>
+              } @else {
+                <button class="btn btn-info" (click)="restoreUser(selectedUser()!); closeUserDetails()">
+                  Restaurer
+                </button>
+              }
+
+              @if (canImpersonate(selectedUser()!)) {
+                <button class="btn btn-purple" (click)="startImpersonation(selectedUser()!); closeUserDetails()">
+                  Impersonate
+                </button>
+              }
+            }
+            <button class="btn btn-secondary" (click)="closeUserDetails()">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Report Chat Modal -->
+  @if (selectedReport()) {
+    <div class="modal-overlay" (click)="closeReport()">
+      <div class="modal modal-chat" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="chat-header-info">
+            <h3>{{ selectedReport()?.subject || 'Rapport' }}</h3>
+            <span class="chat-sender">De: {{ selectedReport()?.sender?.email }}</span>
+          </div>
+          <div class="chat-header-actions">
+            <select [ngModel]="selectedReport()?.status" (ngModelChange)="updateReportStatus($event)">
+              <option value="OPEN">Ouvert</option>
+              <option value="IN_PROGRESS">En cours</option>
+              <option value="RESOLVED">Résolu</option>
+              <option value="CLOSED">Fermé</option>
+            </select>
+            <button class="modal-close" (click)="closeReport()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-messages">
+          @if (reportMessagesLoading()) {
+            <div class="loading-inline">
+              <div class="spinner-small"></div>
+              <span>Chargement...</span>
+            </div>
+          }
+
+          @for (message of reportMessages(); track message.id) {
+            <div class="chat-message" [class.admin]="message.type === 'ADMIN_RESPONSE'" [class.system]="message.type === 'SYSTEM'">
+              <div class="message-header">
+                <span class="message-sender">
+                  @if (message.type === 'ADMIN_RESPONSE') {
+                    Admin: {{ message.sender.nomComplet || message.sender.email }}
+                  } @else if (message.type === 'SYSTEM') {
+                    Système
+                  } @else {
+                    {{ message.sender.nomComplet || message.sender.email }}
+                  }
+                </span>
+                <span class="message-time">{{ formatDate(message.createdAt) }}</span>
+              </div>
+              <p class="message-content">{{ message.message }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="chat-input">
+          <textarea
+            [ngModel]="newReportMessage()"
+            (ngModelChange)="newReportMessage.set($event)"
+            placeholder="Écrire une réponse..."
+            rows="2"
+            (keydown.enter)="$event.preventDefault(); sendReportReply()"
+          ></textarea>
+          <button class="btn btn-primary" (click)="sendReportReply()" [disabled]="sendingMessage() || !newReportMessage().trim()">
+            @if (sendingMessage()) {
+              <div class="spinner-small"></div>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            }
+          </button>
+        </div>
+      </div>
     </div>
   }
 </div>

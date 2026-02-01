@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\EmailVerificationToken;
 use App\Entity\User;
+use App\Service\MailerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -13,6 +15,11 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class RegistrationController extends AbstractController
 {
+    public function __construct(
+        private readonly MailerService $mailerService
+    ) {
+    }
+
     #[Route('/register', name: 'app_register', methods: ['POST'])]
     public function register(
         Request $request,
@@ -22,13 +29,43 @@ class RegistrationController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['email']) || !isset($data['password'])) {
-            return new JsonResponse(['error' => 'Email et password requis'], Response::HTTP_BAD_REQUEST);
+            return new JsonResponse([
+                'error' => [
+                    'code' => 'MISSING_FIELDS',
+                    'message' => 'Email et password requis',
+                ],
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Validate email format
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return new JsonResponse([
+                'error' => [
+                    'code' => 'INVALID_EMAIL',
+                    'message' => 'Format d\'email invalide',
+                ],
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Validate password length
+        if (strlen($data['password']) < 6) {
+            return new JsonResponse([
+                'error' => [
+                    'code' => 'PASSWORD_TOO_SHORT',
+                    'message' => 'Le mot de passe doit contenir au moins 6 caractères',
+                ],
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         // Vérifier si l'utilisateur existe déjà
         $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
         if ($existingUser) {
-            return new JsonResponse(['error' => 'Cet email est déjà utilisé'], Response::HTTP_CONFLICT);
+            return new JsonResponse([
+                'error' => [
+                    'code' => 'EMAIL_EXISTS',
+                    'message' => 'Cet email est déjà utilisé',
+                ],
+            ], Response::HTTP_CONFLICT);
         }
 
         $user = new User();
@@ -37,6 +74,7 @@ class RegistrationController extends AbstractController
         $user->setPassword(
             $passwordHasher->hashPassword($user, $data['password'])
         );
+        $user->setDateInscription(new \DateTimeImmutable());
 
         // Sauvegarder le nom complet s'il est fourni
         if (isset($data['nomComplet']) && !empty($data['nomComplet'])) {
@@ -44,15 +82,31 @@ class RegistrationController extends AbstractController
         }
 
         $em->persist($user);
+
+        // Create email verification token
+        $verificationToken = new EmailVerificationToken();
+        $verificationToken->setUser($user);
+        $em->persist($verificationToken);
+
         $em->flush();
 
+        // Send verification email (don't fail registration if email fails)
+        try {
+            $this->mailerService->sendEmailVerification($user, $verificationToken->getToken());
+        } catch (\Exception $e) {
+            // Log the error but don't fail registration
+            // In production, you might want to queue this for retry
+        }
+
         return new JsonResponse([
-            'message' => 'Utilisateur créé avec succès',
+            'message' => 'Utilisateur créé avec succès. Un email de vérification a été envoyé.',
             'user' => [
+                'id' => $user->getId(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
-                'nomComplet' => $user->getNomComplet()
-            ]
+                'nomComplet' => $user->getNomComplet(),
+                'isEmailVerified' => $user->isEmailVerified(),
+            ],
         ], Response::HTTP_CREATED);
     }
 
@@ -81,6 +135,9 @@ class RegistrationController extends AbstractController
         $user->setPassword(
             $passwordHasher->hashPassword($user, $password)
         );
+        $user->setDateInscription(new \DateTimeImmutable());
+        // Mark as verified for test user
+        $user->verifyEmail();
 
         $em->persist($user);
         $em->flush();
@@ -89,7 +146,7 @@ class RegistrationController extends AbstractController
             'message' => 'Utilisateur de test créé',
             'credentials' => [
                 'email' => $email,
-                'password' => $password
+                'password' => $password,
             ],
             'test_login' => [
                 'curl' => sprintf(
@@ -97,8 +154,88 @@ class RegistrationController extends AbstractController
                     $email,
                     $password
                 ),
-                'url' => 'http://localhost:8080/jwt-example.html'
-            ]
+                'url' => 'http://localhost:8080/jwt-example.html',
+            ],
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Endpoint pour créer un admin de test
+     */
+    #[Route('/register/admin-test', name: 'app_register_admin_test', methods: ['GET', 'POST'])]
+    public function registerAdminTest(
+        UserPasswordHasherInterface $passwordHasher,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $email = 'admin@example.com';
+        $password = 'admin123';
+
+        // Supprimer l'utilisateur s'il existe déjà
+        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $email]);
+        if ($existingUser) {
+            $em->remove($existingUser);
+            $em->flush();
+        }
+
+        $user = new User();
+        $user->setEmail($email);
+        $user->setNomComplet('Admin Test');
+        $user->setRoles(['ROLE_ADMIN']);
+        $user->setPassword(
+            $passwordHasher->hashPassword($user, $password)
+        );
+        $user->setDateInscription(new \DateTimeImmutable());
+        $user->verifyEmail();
+
+        $em->persist($user);
+        $em->flush();
+
+        return new JsonResponse([
+            'message' => 'Administrateur de test créé',
+            'credentials' => [
+                'email' => $email,
+                'password' => $password,
+            ],
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Endpoint pour créer un super admin de test
+     */
+    #[Route('/register/super-admin-test', name: 'app_register_super_admin_test', methods: ['GET', 'POST'])]
+    public function registerSuperAdminTest(
+        UserPasswordHasherInterface $passwordHasher,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $email = 'superadmin@example.com';
+        $password = 'superadmin123';
+
+        // Supprimer l'utilisateur s'il existe déjà
+        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $email]);
+        if ($existingUser) {
+            $em->remove($existingUser);
+            $em->flush();
+        }
+
+        $user = new User();
+        $user->setEmail($email);
+        $user->setNomComplet('Super Admin Test');
+        $user->setRoles(['ROLE_SUPER_ADMIN']);
+        $user->setPassword(
+            $passwordHasher->hashPassword($user, $password)
+        );
+        $user->setDateInscription(new \DateTimeImmutable());
+        $user->verifyEmail();
+
+        $em->persist($user);
+        $em->flush();
+
+        return new JsonResponse([
+            'message' => 'Super Administrateur de test créé',
+            'credentials' => [
+                'email' => $email,
+                'password' => $password,
+            ],
         ], Response::HTTP_CREATED);
     }
 }

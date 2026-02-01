@@ -1,4 +1,18 @@
-<nav class="navbar" [class.dark]="darkMode()">
+<!-- Impersonation Banner -->
+@if (isImpersonating()) {
+  <div class="impersonation-banner">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+    <span>Vous agissez en tant que <strong>{{ impersonationState().targetUser?.email }}</strong></span>
+    <button class="stop-impersonation-btn" (click)="stopImpersonation()">
+      Arrêter l'impersonation
+    </button>
+  </div>
+}
+
+<nav class="navbar" [class.dark]="darkMode()" [class.with-impersonation]="isImpersonating()">
   <!-- Logo -->
   <div class="navbar-brand">
     <a routerLink="/" class="logo">SAMA APPLI</a>
@@ -47,16 +61,27 @@
           }
         </button>
 
-        <!-- Notifications -->
-        <div class="notifications-container">
-          <button class="action-btn notifications-btn" (click)="toggleNotifications()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            @if (unreadCount() > 0) {
-              <span class="notification-badge">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
-            }
-          </button>
+        <!-- Report/Contact Admin Button (for all authenticated users) -->
+        <button class="action-btn report-btn" (click)="openReportModal()" title="Contacter l'admin">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          @if (myReportsUnreadCount() > 0) {
+            <span class="notification-badge">{{ myReportsUnreadCount() }}</span>
+          }
+        </button>
+
+        <!-- Notifications (Admin only) -->
+        @if (canViewNotifications()) {
+          <div class="notifications-container">
+            <button class="action-btn notifications-btn" (click)="toggleNotifications()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              @if (unreadCount() > 0) {
+                <span class="notification-badge">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
+              }
+            </button>
 
           @if (notificationsOpen()) {
             <div class="notifications-dropdown">
@@ -116,7 +141,8 @@
               </div>
             </div>
           }
-        </div>
+          </div>
+        }
 
         <!-- User Dropdown -->
         <div class="user-dropdown-container">
@@ -192,3 +218,138 @@
     }
   </div>
 </nav>
+
+<!-- Report Chat Modal -->
+@if (reportModalOpen()) {
+  <div class="modal-overlay" (click)="closeReportModal()">
+    <div class="report-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        @if (reportChatOpen() && selectedReport()) {
+          <button class="back-btn" (click)="backToReportsList()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h3>{{ selectedReport()?.subject || 'Conversation' }}</h3>
+        } @else if (reportChatOpen()) {
+          <button class="back-btn" (click)="backToReportsList()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h3>Nouveau message</h3>
+        } @else {
+          <h3>Mes messages</h3>
+        }
+        <button class="close-btn" (click)="closeReportModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (reportLoading()) {
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <span>Chargement...</span>
+          </div>
+        } @else if (reportChatOpen() && selectedReport()) {
+          <!-- Chat view for existing thread -->
+          <div class="chat-messages">
+            @for (msg of reportMessages(); track msg.id) {
+              <div class="chat-message" [class.own]="msg.type === 'USER_MESSAGE'" [class.admin]="msg.type === 'ADMIN_RESPONSE'" [class.system]="msg.type === 'SYSTEM'">
+                <div class="message-header">
+                  <span class="sender">{{ msg.type === 'USER_MESSAGE' ? 'Vous' : (msg.type === 'ADMIN_RESPONSE' ? 'Admin' : 'Système') }}</span>
+                  <span class="time">{{ msg.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <div class="message-content">{{ msg.message }}</div>
+              </div>
+            }
+            @if (reportMessages().length === 0) {
+              <div class="no-messages">Aucun message dans cette conversation.</div>
+            }
+          </div>
+
+          @if (selectedReport()?.status !== 'CLOSED') {
+            <div class="chat-input">
+              <input
+                type="text"
+                [(ngModel)]="chatMessage"
+                placeholder="Écrire un message..."
+                (keyup.enter)="sendReportMessage()"
+              />
+              <button class="send-btn" (click)="sendReportMessage()" [disabled]="!chatMessage().trim()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
+          } @else {
+            <div class="thread-closed">Cette conversation est fermée.</div>
+          }
+        } @else if (reportChatOpen()) {
+          <!-- New report form -->
+          <div class="new-report-form">
+            <div class="form-group">
+              <label for="reportSubject">Sujet (optionnel)</label>
+              <input
+                type="text"
+                id="reportSubject"
+                [(ngModel)]="newReportSubject"
+                placeholder="Ex: Question sur mon compte"
+              />
+            </div>
+            <div class="form-group">
+              <label for="reportMessage">Message *</label>
+              <textarea
+                id="reportMessage"
+                [(ngModel)]="newReportMessage"
+                rows="5"
+                placeholder="Décrivez votre problème ou posez votre question..."
+              ></textarea>
+            </div>
+            <button class="submit-btn" (click)="submitNewReport()" [disabled]="!newReportMessage().trim()">
+              Envoyer le message
+            </button>
+          </div>
+        } @else {
+          <!-- Reports list -->
+          <div class="reports-list-container">
+            <button class="new-report-btn" (click)="openNewReportForm()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nouveau message
+            </button>
+
+            @if (myReports().length === 0) {
+              <div class="no-reports">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="48" height="48">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <p>Aucun message pour le moment</p>
+                <span>Cliquez sur "Nouveau message" pour contacter un administrateur</span>
+              </div>
+            } @else {
+              <div class="reports-list">
+                @for (report of myReports(); track report.id) {
+                  <div class="report-item" [class.unread]="!report.isRead" (click)="openReportThread(report)">
+                    <div class="report-info">
+                      <span class="report-subject">{{ report.subject || 'Sans sujet' }}</span>
+                      <span class="report-preview">{{ report.lastMessage }}</span>
+                      <span class="report-date">{{ report.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    <span class="report-status" [class]="getStatusClass(report.status)">
+                      {{ getStatusLabel(report.status) }}
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

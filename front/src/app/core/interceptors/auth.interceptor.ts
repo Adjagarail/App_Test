@@ -12,8 +12,15 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
   const tokenService = inject(TokenService);
   const authService = inject(AuthService);
 
-  // Ne pas ajouter le token pour les requêtes de login et refresh
-  const isAuthRequest = req.url.includes('/login_check') || req.url.includes('/token/refresh') || req.url.includes('/register');
+  // Ne pas ajouter le token pour les requêtes publiques
+  const isAuthRequest = req.url.includes('/login_check') ||
+    req.url.includes('/token/refresh') ||
+    req.url.includes('/register') ||
+    req.url.includes('/password/forgot') ||
+    req.url.includes('/password/reset') ||
+    req.url.includes('/password/verify') ||
+    req.url.includes('/auth/verify-email') ||
+    req.url.includes('/auth/resend-verification');
 
   if (isAuthRequest) {
     return next(req);

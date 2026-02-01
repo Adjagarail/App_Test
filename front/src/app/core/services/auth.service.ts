@@ -74,6 +74,19 @@ export class AuthService {
   }
 
   logout(): void {
+    // Call backend to end session, then clear local tokens
+    // Fire and forget - we don't block logout on backend response
+    if (this.tokenService.getToken()) {
+      this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
+        complete: () => {
+          // Session ended on server
+        },
+        error: () => {
+          // Ignore errors - we still want to clear local state
+        }
+      });
+    }
+
     this.tokenService.clearTokens();
     this.currentUserSignal.set(null);
     this.router.navigate(['/login']);

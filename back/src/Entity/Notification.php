@@ -24,6 +24,7 @@ class Notification
     public const TYPE_EMAIL_VERIFIED = 'EMAIL_VERIFIED';
     public const TYPE_NEW_LOGIN = 'NEW_LOGIN';
     public const TYPE_SYSTEM = 'SYSTEM';
+    public const TYPE_REPORT_RESPONSE = 'REPORT_RESPONSE';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]

@@ -30,6 +30,13 @@ import {
 } from '../models';
 import { environment } from '../../../environments/environment';
 
+export interface ActiveUsersMetrics {
+  activeUsers: number;
+  activeSessions: number;
+  updatedAt: string;
+  activeDefinition?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -143,6 +150,13 @@ export class AdminService {
 
   stopImpersonation(): Observable<ImpersonationStopResponse> {
     return this.http.post<ImpersonationStopResponse>(`${this.apiUrl}/admin/impersonation/stop`, {});
+  }
+
+  // === Metrics ===
+
+  getActiveUsersMetrics(withinMinutes: number = 5): Observable<ActiveUsersMetrics> {
+    const params = new HttpParams().set('minutes', withinMinutes.toString());
+    return this.http.get<ActiveUsersMetrics>(`${this.apiUrl}/admin/metrics/active-users`, { params });
   }
 
   // === Password Reset ===

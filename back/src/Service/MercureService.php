@@ -19,20 +19,26 @@ class MercureService
 
     /**
      * Publish active users count to all subscribed clients.
+     *
+     * @param int|null $count If provided, uses this count. Otherwise queries refresh_tokens (legacy).
      */
-    public function publishActiveUsersCount(): void
+    public function publishActiveUsersCount(?int $count = null): void
     {
-        $conn = $this->entityManager->getConnection();
-        $sql = 'SELECT COUNT(DISTINCT username) as count FROM refresh_tokens WHERE valid > NOW()';
-        $result = $conn->executeQuery($sql)->fetchAssociative();
-        $activeSessions = $result ? (int) $result['count'] : 0;
+        // If no count provided, fall back to legacy refresh token query
+        if ($count === null) {
+            $conn = $this->entityManager->getConnection();
+            $sql = 'SELECT COUNT(DISTINCT username) as count FROM refresh_tokens WHERE valid > NOW()';
+            $result = $conn->executeQuery($sql)->fetchAssociative();
+            $count = $result ? (int) $result['count'] : 0;
+        }
 
         $update = new Update(
             'dashboard/active-users',
             json_encode([
-                'type' => 'active_users_update',
-                'count' => $activeSessions,
-                'timestamp' => (new \DateTimeImmutable())->format('c'),
+                'type' => 'ACTIVE_USERS_UPDATED',
+                'activeUsers' => $count,
+                'activeSessions' => $count, // Same value when called from legacy
+                'updatedAt' => (new \DateTimeImmutable())->format('c'),
             ]),
             false // Public topic - anonymous allowed
         );

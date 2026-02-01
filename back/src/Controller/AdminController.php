@@ -9,6 +9,7 @@ use App\Repository\AuditLogRepository;
 use App\Repository\UserRepository;
 use App\Service\AuditService;
 use App\Service\NotificationService;
+use App\Service\SessionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,8 +28,32 @@ class AdminController extends AbstractController
         private readonly UserRepository $userRepository,
         private readonly AuditService $auditService,
         private readonly NotificationService $notificationService,
-        private readonly RefreshTokenManagerInterface $refreshTokenManager
+        private readonly RefreshTokenManagerInterface $refreshTokenManager,
+        private readonly SessionService $sessionService
     ) {
+    }
+
+    /**
+     * Get active users metrics.
+     * GET /api/admin/metrics/active-users
+     *
+     * Returns:
+     * - activeUsers: number of distinct users with active sessions
+     * - activeSessions: total number of active sessions
+     * - updatedAt: timestamp of the query
+     * - activeDefinition: explanation of "active" criteria (default: seen within 5 minutes)
+     */
+    #[Route('/metrics/active-users', name: 'api_admin_metrics_active_users', methods: ['GET'])]
+    public function getActiveUsersMetrics(Request $request): JsonResponse
+    {
+        $withinMinutes = $request->query->getInt('minutes', SessionService::DEFAULT_ACTIVE_MINUTES);
+
+        // Clamp to reasonable values (1-60 minutes)
+        $withinMinutes = max(1, min(60, $withinMinutes));
+
+        $metrics = $this->sessionService->getActiveUsersMetrics($withinMinutes);
+
+        return new JsonResponse($metrics);
     }
 
     /**
@@ -324,11 +349,16 @@ class AdminController extends AbstractController
         $user->setRoles(array_values(array_unique($validRoles)));
         $this->entityManager->flush();
 
-        // Audit
-        $this->auditService->logRolesUpdated($admin, $user, $oldRoles, $user->getRoles());
+        $newRoles = $user->getRoles();
 
-        // Notify user
-        $this->notificationService->notifyRolesUpdated($user, $user->getRoles());
+        // Audit
+        $this->auditService->logRolesUpdated($admin, $user, $oldRoles, $newRoles);
+
+        // Notify user only if roles actually changed
+        $rolesChanged = !empty(array_diff($oldRoles, $newRoles)) || !empty(array_diff($newRoles, $oldRoles));
+        if ($rolesChanged) {
+            $this->notificationService->notifyRolesUpdated($user, $newRoles);
+        }
 
         return new JsonResponse([
             'message' => 'Rôles mis à jour avec succès',

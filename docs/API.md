@@ -726,3 +726,91 @@ Reset password with token.
 | `EMAIL_VERIFICATION_SENT` | Verification email sent |
 | `DATA_EXPORTED` | User data exported |
 | `PROFILE_UPDATED` | Profile updated |
+
+---
+
+## Session Management (Added February 2026)
+
+### POST /api/logout
+Terminate server-side session.
+
+**Auth:** Required
+
+**Response 200:**
+```json
+{
+  "message": "Déconnexion réussie",
+  "sessionEnded": true,
+  "note": "N'oubliez pas de supprimer le token de votre stockage local."
+}
+```
+
+**Notes:**
+- Extracts `jti` (JWT ID) from token to identify session
+- Marks session as ended in database
+- JWT token remains technically valid until expiration (15 min)
+- Client should clear localStorage after this call
+
+---
+
+## Admin Metrics (Added February 2026)
+
+### GET /api/admin/metrics/active-users
+Get active users metrics.
+
+**Auth:** Required (`ROLE_ADMIN`)
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| minutes | int | 5 | Time window to consider a user "active" (1-60) |
+
+**Response 200:**
+```json
+{
+  "activeUsers": 12,
+  "activeSessions": 15,
+  "updatedAt": "2026-02-01T15:30:00+00:00",
+  "activeDefinition": "Seen within last 5 minutes"
+}
+```
+
+**Notes:**
+- `activeUsers`: Number of distinct users with active sessions
+- `activeSessions`: Total active sessions (user can have multiple sessions)
+- Session is "active" if `ended_at IS NULL` AND `last_seen_at >= NOW() - {minutes} minutes`
+
+---
+
+## Mercure Events (Added February 2026)
+
+### Topic: dashboard/active-users
+
+Event published on session create/end.
+
+**Payload:**
+```json
+{
+  "type": "ACTIVE_USERS_UPDATED",
+  "activeUsers": 12,
+  "activeSessions": 15,
+  "updatedAt": "2026-02-01T15:30:00+00:00"
+}
+```
+
+---
+
+## New Notification Type (Added February 2026)
+
+| Type | Description |
+|------|-------------|
+| `REPORT_RESPONSE` | User notification when admin replies to their report |
+
+**Payload example:**
+```json
+{
+  "title": "Réponse à votre rapport",
+  "message": "John Doe a répondu à votre rapport",
+  "thread_id": 123,
+  "link": "/profile"
+}

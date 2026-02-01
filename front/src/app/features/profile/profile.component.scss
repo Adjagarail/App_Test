@@ -2,15 +2,18 @@
   padding: 2rem;
   max-width: 800px;
   margin: 0 auto;
+  min-height: calc(100vh - 80px);
 }
 
 .profile-header {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 
   h1 {
     font-size: 2rem;
+    font-weight: 700;
     color: #1f2937;
     margin: 0;
+    letter-spacing: -0.025em;
   }
 }
 
@@ -165,17 +168,23 @@
 .profile-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .profile-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
   display: flex;
   align-items: flex-start;
   gap: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
 }
 
 .avatar {
@@ -257,20 +266,29 @@
 .info-card,
 .token-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
 
   h3 {
-    margin: 0 0 1rem 0;
+    margin: 0 0 1.25rem 0;
     color: #1f2937;
     font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .card-description {
     color: #6b7280;
-    margin: 0 0 1rem 0;
+    margin: 0 0 1.25rem 0;
     font-size: 0.9rem;
+    line-height: 1.5;
   }
 }
 
@@ -379,21 +397,29 @@
 
 .danger-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-left: 4px solid #ef4444;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
 
   h3 {
-    margin: 0 0 1rem 0;
+    margin: 0 0 1.25rem 0;
     color: #991b1b;
     font-size: 1.1rem;
+    font-weight: 600;
   }
 
   .card-description {
     color: #6b7280;
-    margin: 0 0 1rem 0;
+    margin: 0 0 1.25rem 0;
     font-size: 0.9rem;
+    line-height: 1.5;
   }
 }
 
@@ -528,5 +554,236 @@
 
   .info-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+// === DARK MODE ===
+
+body.dark-mode {
+  .profile-header h1 {
+    color: #f3f4f6;
+  }
+
+  .success-message {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+    color: #a7f3d0;
+    border-color: #059669;
+  }
+
+  .error-message {
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    color: #fecaca;
+    border-color: #dc2626;
+  }
+
+  .loading-state p,
+  .error-state p {
+    color: #9ca3af;
+  }
+
+  .error-state p {
+    color: #f87171;
+  }
+
+  .spinner-large {
+    border-color: #374151;
+    border-top-color: #818cf8;
+  }
+
+  .btn-secondary {
+    background-color: #374151;
+    color: #f3f4f6;
+
+    &:hover:not(:disabled) {
+      background-color: #4b5563;
+    }
+  }
+
+  .btn-outline {
+    border-color: #818cf8;
+    color: #818cf8;
+
+    &:hover:not(:disabled) {
+      background-color: #818cf8;
+      color: #1f2937;
+    }
+  }
+
+  .profile-card {
+    background: #1f2937;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .profile-info {
+    h2 {
+      color: #f3f4f6;
+    }
+
+    .email {
+      color: #9ca3af;
+    }
+  }
+
+  .role-badge {
+    background-color: #374151;
+    color: #d1d5db;
+
+    &.admin {
+      background-color: #78350f;
+      color: #fde68a;
+    }
+
+    &.semi-admin {
+      background-color: #1e3a8a;
+      color: #93c5fd;
+    }
+
+    &.moderator {
+      background-color: #064e3b;
+      color: #6ee7b7;
+    }
+
+    &.analyst {
+      background-color: #312e81;
+      color: #c7d2fe;
+    }
+  }
+
+  .info-card,
+  .token-card {
+    background: #1f2937;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    h3 {
+      color: #f3f4f6;
+    }
+
+    .card-description {
+      color: #9ca3af;
+    }
+  }
+
+  .info-item {
+    .info-label {
+      color: #9ca3af;
+    }
+
+    .info-value {
+      color: #f3f4f6;
+
+      &.verified {
+        color: #34d399;
+      }
+
+      &.not-verified {
+        color: #f87171;
+      }
+    }
+  }
+
+  .info-row {
+    .label {
+      color: #9ca3af;
+    }
+
+    .value {
+      color: #f3f4f6;
+    }
+  }
+
+  .admin-notice {
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+
+    svg {
+      color: #fbbf24;
+    }
+
+    strong {
+      color: #fde68a;
+    }
+
+    p {
+      color: #fcd34d;
+    }
+
+    &.super-admin {
+      background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+
+      svg {
+        color: #a78bfa;
+      }
+
+      strong {
+        color: #ddd6fe;
+      }
+
+      p {
+        color: #c4b5fd;
+      }
+    }
+  }
+
+  .danger-card {
+    background: #1f2937;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    border-left-color: #f87171;
+
+    h3 {
+      color: #fca5a5;
+    }
+
+    .card-description {
+      color: #9ca3af;
+    }
+  }
+
+  .pending-request-notice {
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+    color: #fde68a;
+
+    svg {
+      color: #fbbf24;
+    }
+  }
+
+  .warning-text {
+    background-color: #78350f;
+    color: #fde68a;
+    border-left-color: #f59e0b;
+  }
+
+  .form-group {
+    label {
+      color: #d1d5db;
+    }
+
+    input,
+    textarea {
+      background-color: #374151;
+      border-color: #4b5563;
+      color: #f3f4f6;
+
+      &:hover:not(:disabled) {
+        border-color: #818cf8;
+      }
+
+      &:focus {
+        border-color: #818cf8;
+        box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+      }
+
+      &:disabled {
+        background-color: #1f2937;
+        color: #6b7280;
+      }
+
+      &::placeholder {
+        color: #6b7280;
+      }
+    }
+
+    .field-note {
+      color: #6b7280;
+    }
   }
 }

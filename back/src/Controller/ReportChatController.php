@@ -76,16 +76,21 @@ class ReportChatController extends AbstractController
         }
 
         // Mark messages as read
+        $hasChanges = false;
         foreach ($messages as $message) {
             if (!$message->isRead()) {
                 if ($isAdmin && $message->isFromUser()) {
                     $message->setIsRead(true);
+                    $hasChanges = true;
                 } elseif ($isOwner && $message->isFromAdmin()) {
                     $message->setIsRead(true);
+                    $hasChanges = true;
                 }
             }
         }
-        $this->reportMessageRepository->save($messages[0], true);
+        if ($hasChanges) {
+            $this->reportMessageRepository->save($messages[0], true);
+        }
 
         return new JsonResponse([
             'thread' => $this->formatThread($firstMessage),
@@ -210,6 +215,13 @@ class ReportChatController extends AbstractController
                 $user,
                 $messageText,
                 $reply->getId()
+            );
+
+            // Create persistent notification for user
+            $this->notificationService->notifyReportResponse(
+                $thread->getSender(),
+                $threadId,
+                $user->getNomComplet()
             );
         } else {
             // Notify admins

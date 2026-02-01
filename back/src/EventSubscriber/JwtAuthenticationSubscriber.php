@@ -4,17 +4,25 @@ namespace App\EventSubscriber;
 
 use App\Entity\User;
 use App\Service\AuditService;
+use App\Service\SessionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationFailureEvent;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTCreatedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Uid\Uuid;
 
 class JwtAuthenticationSubscriber implements EventSubscriberInterface
 {
+    // Store the generated JTI to use when creating session
+    private ?string $currentJti = null;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AuditService $auditService
+        private readonly AuditService $auditService,
+        private readonly SessionService $sessionService,
+        private readonly RequestStack $requestStack
     ) {
     }
 
@@ -48,6 +56,18 @@ class JwtAuthenticationSubscriber implements EventSubscriberInterface
 
         // Audit log
         $this->auditService->logLogin($user);
+
+        // Create session if we have a JTI
+        if ($this->currentJti !== null) {
+            $request = $this->requestStack->getCurrentRequest();
+            $ip = $request?->getClientIp();
+            $userAgent = $request?->headers->get('User-Agent');
+
+            $this->sessionService->createSession($user, $ip, $userAgent, $this->currentJti);
+
+            // Reset for next authentication
+            $this->currentJti = null;
+        }
     }
 
     public function onAuthenticationFailure(AuthenticationFailureEvent $event): void
@@ -71,11 +91,15 @@ class JwtAuthenticationSubscriber implements EventSubscriberInterface
             return;
         }
 
+        // Generate unique JWT ID for session tracking
+        $this->currentJti = Uuid::v4()->toRfc4122();
+
         // Add custom claims to JWT
         $payload = $event->getData();
         $payload['id'] = $user->getId();
         $payload['nomComplet'] = $user->getNomComplet();
         $payload['isEmailVerified'] = $user->isEmailVerified();
+        $payload['jti'] = $this->currentJti;
 
         $event->setData($payload);
     }

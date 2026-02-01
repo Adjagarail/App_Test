@@ -114,6 +114,19 @@ class NotificationService
     }
 
     /**
+     * Notify user when admin replies to their report.
+     */
+    public function notifyReportResponse(User $recipient, int $threadId, string $adminName): Notification
+    {
+        return $this->create($recipient, Notification::TYPE_REPORT_RESPONSE, [
+            'title' => 'Réponse à votre rapport',
+            'message' => sprintf('%s a répondu à votre rapport', $adminName),
+            'thread_id' => $threadId,
+            'link' => '/profile',
+        ]);
+    }
+
+    /**
      * Notify all admins about an event.
      *
      * @param User[] $admins

@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { AdminService } from '../../core/services/admin.service';
+import { AdminService, ActiveUsersMetrics } from '../../core/services/admin.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { MercureService, MercureMessage } from '../../core/services/mercure.service';
@@ -121,17 +121,62 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Audit detail modal
   selectedAuditLog = signal<AuditLogResponse | null>(null);
 
+  // Polling fallback for active users
+  private activeUsersPollingInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly POLLING_INTERVAL_MS = 30000; // 30 seconds
+
   ngOnInit(): void {
     this.loadDashboard();
     if (this.isAdmin()) {
       this.loadAvailableRoles();
       this.setupMercureSubscriptions();
       this.loadReports();
+      this.setupActiveUsersPollingFallback();
     }
   }
 
   ngOnDestroy(): void {
     this.mercureService.closeAll();
+    this.stopActiveUsersPolling();
+  }
+
+  /**
+   * Setup polling fallback for active users when Mercure is not connected.
+   */
+  private setupActiveUsersPollingFallback(): void {
+    // Check every 5 seconds if Mercure is connected
+    // If not connected, poll the API for active users
+    this.activeUsersPollingInterval = setInterval(() => {
+      if (!this.mercureService.isConnected()) {
+        this.pollActiveUsers();
+      }
+    }, this.POLLING_INTERVAL_MS);
+
+    // Initial poll
+    setTimeout(() => {
+      if (!this.mercureService.isConnected()) {
+        this.pollActiveUsers();
+      }
+    }, 2000);
+  }
+
+  private stopActiveUsersPolling(): void {
+    if (this.activeUsersPollingInterval) {
+      clearInterval(this.activeUsersPollingInterval);
+      this.activeUsersPollingInterval = null;
+    }
+  }
+
+  private pollActiveUsers(): void {
+    this.adminService.getActiveUsersMetrics().subscribe({
+      next: (metrics) => {
+        // Update the signal directly
+        this.mercureService.activeUsersCount.set(metrics.activeSessions);
+      },
+      error: () => {
+        // Silently fail - we'll retry on next interval
+      }
+    });
   }
 
   private setupMercureSubscriptions(): void {

@@ -48,7 +48,7 @@ class DashboardController extends AbstractController
      * API endpoint pour récupérer les données du dashboard
      */
     #[Route('/api/dashboard', name: 'api_dashboard', methods: ['GET'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    #[IsGranted('ROLE_ADMIN')]
     public function apiDashboard(): JsonResponse
     {
         $user = $this->getUser();
@@ -86,6 +86,15 @@ class DashboardController extends AbstractController
         // Compter les emails non vérifiés
         $unverifiedEmails = (int) $this->entityManager
             ->createQuery('SELECT COUNT(u) FROM App\Entity\User u WHERE u.isEmailVerified = false AND u.deletedAt IS NULL')
+            ->getSingleScalarResult();
+
+        $totalUsers = $this->userRepository->count([]);
+
+        $now = new \DateTime();
+
+        $activeSessions = (int) $this->entityManager
+            ->createQuery('SELECT COUNT(r) FROM App\Entity\RefreshToken r WHERE r.valid > :now')
+            ->setParameter('now', $now)
             ->getSingleScalarResult();
 
         return new JsonResponse([

@@ -83,6 +83,11 @@ class RegistrationController extends AbstractController
             $user->setNomComplet($data['nomComplet']);
         }
 
+        // Sauvegarder le nom complet s'il est fourni
+        if (isset($data['nomComplet']) && !empty($data['nomComplet'])) {
+            $user->setNomComplet($data['nomComplet']);
+        }
+
         $em->persist($user);
 
         // Create email verification token

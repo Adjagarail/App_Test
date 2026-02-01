@@ -1,7 +1,7 @@
 <div class="dashboard-container">
   <header class="dashboard-header">
     <h1>Dashboard Administrateur</h1>
-    <p class="welcome">Bienvenue, {{ currentUser()?.email }}</p>
+    <p class="welcome">Bienvenue, {{ dashboardData()?.user?.nomComplet }} </p>
   </header>
 
   @if (loading()) {

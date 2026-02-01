@@ -26,6 +26,8 @@ export class AuthService {
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = this.tokenService.isAuthenticated;
   readonly isAdmin = computed(() => this.tokenService.hasRole('ROLE_ADMIN'));
+  readonly isSemiAdmin = computed(() => this.tokenService.hasRole('ROLE_SEMI_ADMIN'));
+  readonly userRoles = computed(() => this.currentUserSignal()?.roles || []);
 
   constructor() {
     this.initializeUser();
@@ -35,10 +37,12 @@ export class AuthService {
     if (this.tokenService.getToken()) {
       const username = this.tokenService.getUsername();
       const roles = this.tokenService.getUserRoles();
+      const nomComplet = this.tokenService.getNomComplet();
       if (username) {
         this.currentUserSignal.set({
           email: username,
-          roles: roles
+          roles: roles,
+          nomComplet: nomComplet || undefined
         });
       }
     }

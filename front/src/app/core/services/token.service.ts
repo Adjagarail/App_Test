@@ -74,6 +74,11 @@ export class TokenService {
     return payload?.username ?? null;
   }
 
+  getNomComplet(): string | null {
+    const payload = this.decodeToken();
+    return payload?.nomComplet ?? null;
+  }
+  
   hasRole(role: string): boolean {
     return this.getUserRoles().includes(role);
   }

@@ -47,9 +47,14 @@ class ProfileController extends AbstractController
         $user = $this->getUser();
 
         return new JsonResponse([
+            'id' => $user->getId(),
             'email' => $user->getUserIdentifier(),
             'roles' => $user->getRoles(),
             'nomComplet' => $user->getNomComplet(),
+            'dateInscription' => $user->getDateInscription()?->format('c'),
+            'dateDerniereConnexion' => $user->getDateDerniereConnexion()?->format('c'),
+            'isEmailVerified' => $user->isEmailVerified(),
+            'emailVerifiedAt' => $user->getEmailVerifiedAt()?->format('c'),
         ]);
     }
 }

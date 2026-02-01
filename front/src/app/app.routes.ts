@@ -19,6 +19,16 @@ export const routes: Routes = [
     canActivate: [noAuthGuard]
   },
   {
+    path: 'forgot-password',
+    loadComponent: () => import('./features/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
+    canActivate: [noAuthGuard]
+  },
+  {
+    path: 'reset-password/:token',
+    loadComponent: () => import('./features/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
+    canActivate: [noAuthGuard]
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
     canActivate: [authGuard, roleGuard],
@@ -28,7 +38,7 @@ export const routes: Routes = [
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ROLE_ADMIN'] }
+    data: { roles: ['ROLE_SEMI_ADMIN', 'ROLE_ADMIN'] }
   },
   {
     path: 'unauthorized',

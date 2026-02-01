@@ -15,6 +15,163 @@ html, body {
   background-color: #f9fafb;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+// Dark mode global styles
+body.dark-mode {
+  color: #f3f4f6;
+  background-color: #111827;
+
+  // Cards and containers
+  .login-card,
+  .register-card,
+  .profile-card,
+  .dashboard-card,
+  .reset-password-card,
+  .forgot-password-card,
+  .card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  // Form inputs
+  input, textarea, select {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+
+    &:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+    }
+  }
+
+  // Headings
+  h1, h2, h3, h4, h5, h6 {
+    color: #f3f4f6;
+  }
+
+  // Labels
+  label {
+    color: #d1d5db;
+  }
+
+  // Links
+  a {
+    color: #818cf8;
+
+    &:hover {
+      color: #a78bfa;
+    }
+  }
+
+  // Alerts
+  .alert-error {
+    background-color: rgba(220, 38, 38, 0.2);
+    border-color: #dc2626;
+    color: #fca5a5;
+  }
+
+  .alert-success {
+    background-color: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #6ee7b7;
+  }
+
+  // Tables
+  table {
+    th {
+      background-color: #374151;
+      color: #d1d5db;
+    }
+
+    td {
+      color: #d1d5db;
+      border-color: #374151;
+    }
+
+    tbody tr:hover {
+      background-color: #374151;
+    }
+  }
+
+  // Stats cards
+  .stat-card {
+    background-color: #1f2937;
+
+    .stat-value {
+      color: #f3f4f6;
+    }
+
+    .stat-label {
+      color: #9ca3af;
+    }
+  }
+
+  // Accordion
+  .accordion-section {
+    background-color: #1f2937;
+
+    &.open .accordion-header {
+      border-bottom-color: #374151;
+    }
+  }
+
+  .accordion-header:hover {
+    background-color: #374151;
+  }
+
+  .accordion-title {
+    color: #f3f4f6;
+  }
+
+  // Pagination
+  .pagination {
+    border-top-color: #374151;
+  }
+
+  .pagination-info {
+    color: #9ca3af;
+  }
+
+  // Loading states
+  .loading-inline {
+    color: #9ca3af;
+  }
+
+  .spinner-small {
+    border-color: #374151;
+    border-top-color: #818cf8;
+  }
+
+  // Error states
+  .error-inline {
+    background-color: rgba(220, 38, 38, 0.2);
+    color: #fca5a5;
+  }
+
+  // Badge
+  .badge {
+    &.admin {
+      background-color: rgba(217, 119, 6, 0.2);
+      color: #fcd34d;
+    }
+  }
+
+  // Buttons outline
+  .btn-outline {
+    border-color: #4b5563;
+    color: #d1d5db;
+
+    &:hover {
+      background-color: #374151;
+    }
+  }
 }
 
 a {

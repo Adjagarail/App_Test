@@ -25,7 +25,10 @@ export class AuthService {
   readonly loading = this.loadingSignal.asReadonly();
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = this.tokenService.isAuthenticated;
-  readonly isAdmin = computed(() => this.tokenService.hasRole('ROLE_ADMIN'));
+  readonly isSuperAdmin = computed(() => this.tokenService.hasRole('ROLE_SUPER_ADMIN'));
+  readonly isAdmin = computed(() => this.tokenService.hasRole('ROLE_ADMIN') || this.isSuperAdmin());
+  readonly isSemiAdmin = computed(() => this.tokenService.hasRole('ROLE_SEMI_ADMIN'));
+  readonly userRoles = computed(() => this.currentUserSignal()?.roles || []);
 
   constructor() {
     this.initializeUser();
@@ -33,12 +36,16 @@ export class AuthService {
 
   private initializeUser(): void {
     if (this.tokenService.getToken()) {
+      const id = this.tokenService.getUserId();
       const username = this.tokenService.getUsername();
       const roles = this.tokenService.getUserRoles();
+      const nomComplet = this.tokenService.getNomComplet();
       if (username) {
         this.currentUserSignal.set({
+          id: id || undefined,
           email: username,
-          roles: roles
+          roles: roles,
+          nomComplet: nomComplet || undefined
         });
       }
     }

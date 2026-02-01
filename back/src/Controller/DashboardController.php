@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -13,7 +14,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class DashboardController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManager
+        private readonly UserRepository $userRepository,
+        private readonly EntityManagerInterface $entityManager
     ) {
     }
     /**
@@ -98,7 +100,7 @@ class DashboardController extends AbstractController
             ->getSingleScalarResult();
 
         return new JsonResponse([
-            'message' => 'Bienvenue sur le dashboard',
+            'message' => 'Bienvenue sur le dashboard administrateur',
             'user' => [
                 'email' => $user->getUserIdentifier(),
                 'roles' => $user->getRoles(),
@@ -110,7 +112,8 @@ class DashboardController extends AbstractController
                 'activeSessions' => $activeSessions,
                 'pendingDeleteRequests' => $pendingDeleteRequests,
                 'suspendedUsers' => $suspendedUsers,
-                'unverifiedEmails' => $unverifiedEmails
+                'unverifiedEmails' => $unverifiedEmails,
+                'todayLogins' => $activeSessions
             ]
         ]);
     }
